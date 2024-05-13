@@ -31,6 +31,7 @@ func (scanner *CsvScanner) Init(input_file string) error {
 		}
 	}
 
+	scanner.strip = config.ScanCsvStrip
 	scanner.stripby = config.ScanCsvStripBy
 	scanner.reader = csv.NewReader(scanner.input_file)
 	scanner.reader.FieldsPerRecord = -1
@@ -43,8 +44,8 @@ func (scanner *CsvScanner) Init(input_file string) error {
 		scanner.reader.Comma = tmp[0]
 	}
 
-	if config.ScanCsvFieldNames != "" {
-		scanner.fieldNames = strings.Split(config.ScanCsvFieldNames, ",")
+	if config.ScanCsvColumnNames != "" {
+		scanner.fieldNames = strings.Split(config.ScanCsvColumnNames, ",")
 	} else {
 		rows, err := scanner.reader.Read()
 		if err != nil {
@@ -54,8 +55,12 @@ func (scanner *CsvScanner) Init(input_file string) error {
 		scanner.fieldNames = rows
 	}
 
-	if config.ScanCsvAsNull != "" {
-		scanner.nullValues = strings.Split(config.ScanCsvAsNull, ",")
+	if !config.ScanCsvNoNull {
+		if len(config.ScanCsvAsNull) != 0 {
+			scanner.nullValues = config.ScanCsvAsNull
+		} else {
+			scanner.nullValues = []string{""}
+		}
 	}
 
 	return nil

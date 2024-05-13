@@ -10,6 +10,8 @@ func main() {
 
 	if flag.Arg(0) == "hint" {
 		hinter()
+	} else if flag.Arg(0) == "analyze" {
+		analyzer()
 	} else {
 		fmt.Println("unknown subcommand")
 	}

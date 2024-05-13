@@ -43,7 +43,7 @@ func hinter() {
 		} else {
 			a = true
 		}
-		fmt.Print("  --field-type=", k, ":", h.GetType(), ":", strings.Join(h.get_tags(), ":"))
+		fmt.Print("  --column-type=", k, ":", h.GetType(), ":", strings.Join(h.get_tags(), ":"))
 	}
 	fmt.Print("\n")
 }
