@@ -1,8 +1,8 @@
 package main
 
 type Analyzer interface {
-	Init(string) ([]FormatterColumn, []FormatterIndex, error)
-	Analyze(map[string]*string) error
+	Init(FormatterColumn) ([]FormatterColumn, []FormatterIndex, error)
+	Analyze(*map[string]*string) error
 }
 
 func GetAnalyzer(tag string) Analyzer {

@@ -19,6 +19,7 @@ func hinter() {
 	hinters := make(map[string]*Hinter)
 	for _, k := range scanner.Fields() {
 		hinters[k] = &Hinter{}
+		hinters[k].Init()
 	}
 
 	for {
@@ -44,6 +45,10 @@ func hinter() {
 			a = true
 		}
 		fmt.Print("  --column-type=", k, ":", h.GetType(), ":", strings.Join(h.get_tags(), ":"))
+
+		if h.GetType() == "str" {
+			fmt.Print(" \\\n  --column-len=", k, ":", h.GetMaxLen(), ":", h.GetMinLen())
+		}
 	}
 	fmt.Print("\n")
 }

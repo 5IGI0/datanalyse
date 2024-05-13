@@ -47,7 +47,7 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 		f.Writer.WriteString(col.Name)
 		f.Writer.WriteString("` ")
 		f.Writer.WriteString(map[int8]string{
-			FMT_TYPE_STR:    "VARCHAR(128)",
+			FMT_TYPE_STR:    f.get_string_type(col),
 			FMT_TYPE_INT8:   "TINYINT",
 			FMT_TYPE_UINT8:  "TINYINT UNSIGNED",
 			FMT_TYPE_INT16:  "SMALLINT",
@@ -64,6 +64,15 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 	}
 	f.Writer.WriteString(");\n")
 	return nil
+}
+
+func (f *MySQLFormatter) get_string_type(column FormatterColumn) string {
+	if column.IsLenFixed {
+		return fmt.Sprint("CHAR(", column.IsLenFixed, ")")
+	} else if column.MaxLen != 0 && column.MaxLen < 1024 {
+		return fmt.Sprint("VARCHAR(", column.MaxLen, ")")
+	}
+	return "TEXT"
 }
 
 func (f *MySQLFormatter) _startInsertQuery() {
@@ -104,6 +113,7 @@ func (f *MySQLFormatter) _encodeRow(row map[string]*string) string {
 }
 
 func (f *MySQLFormatter) WriteRow(row map[string]*string) error {
+	f.reverse_idx.Apply(&row)
 	if f.CachedQuery.Len() == 0 {
 		f._startInsertQuery()
 		f.CachedQuery.WriteString(f._encodeRow(row))

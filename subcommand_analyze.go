@@ -34,7 +34,7 @@ func analyzer() {
 		}
 
 		for _, analyzer := range analyzers {
-			if err := analyzer.Analyze(data); err != nil {
+			if err := analyzer.Analyze(&data); err != nil {
 				panic(err)
 			}
 		}
@@ -42,6 +42,13 @@ func analyzer() {
 		formatter.WriteRow(data)
 	}
 
+}
+
+func analyzer_setlen(col *FormatterColumn) {
+	if v, e := config.ColumnLens[col.Name]; e && v != nil {
+		col.IsLenFixed = v.Max == v.Min
+		col.MaxLen = v.Max
+	}
 }
 
 func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []FormatterIndex, []Analyzer) {
@@ -58,6 +65,8 @@ func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []Format
 			Warn(fmt.Sprintf("no type was specified for `%s`, interpreted as nullable string.", f))
 			output_columns = append(output_columns, FormatterColumn{
 				Name: f, Type: FMT_TYPE_STR, Tags: []string{"nullable"}})
+
+			analyzer_setlen(&output_columns[len(output_columns)-1])
 		} else {
 			fmt_type := StrType2FmtType(types[0])
 
@@ -65,14 +74,17 @@ func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []Format
 				Warn(fmt.Sprintf("invalid type `%s`, `%s` interpreted as nullable string.", types[0], f))
 				output_columns = append(output_columns, FormatterColumn{
 					Name: f, Type: FMT_TYPE_STR, Tags: []string{"nullable"}})
+				analyzer_setlen(&output_columns[len(output_columns)-1])
 			} else {
 				output_columns = append(output_columns, FormatterColumn{
 					Name: f, Type: fmt_type, Tags: types[1:]})
 
+				analyzer_setlen(&output_columns[len(output_columns)-1])
+
 				for _, tag := range types[1:] {
 					//log.Println(tag)
 					if analyzer := GetAnalyzer(tag); analyzer != nil {
-						c, i, e := analyzer.Init(f)
+						c, i, e := analyzer.Init(output_columns[len(output_columns)-1])
 						if e != nil {
 							panic(e)
 						}
@@ -84,6 +96,7 @@ func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []Format
 				}
 			}
 		}
+
 	}
 
 	return output_columns, output_indexes, output_analyzers

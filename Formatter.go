@@ -7,9 +7,11 @@ type Formatter interface {
 }
 
 type FormatterColumn struct {
-	Name string
-	Type int8
-	Tags []string
+	Name       string
+	Type       int8
+	Tags       []string
+	MaxLen     int
+	IsLenFixed bool
 }
 
 const (

@@ -11,33 +11,43 @@ type EmailAnalyzer struct {
 	ColumnName string
 }
 
-func (a *EmailAnalyzer) Init(ColumnName string) ([]FormatterColumn, []FormatterIndex, error) {
-	a.ColumnName = ColumnName
+func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
+	a.ColumnName = Column.Name
 
 	return []FormatterColumn{
 			{
-				Name: "__" + ColumnName + "__email_sanitized",
-				Type: FMT_TYPE_STR,
-				Tags: []string{"nullable"}},
+				Name:   "__" + Column.Name + "__email_sanitized",
+				Type:   FMT_TYPE_STR,
+				Tags:   []string{"nullable"},
+				MaxLen: Column.MaxLen},
 			{
-				Name: "__" + ColumnName + "__email_reverse_login",
-				Type: FMT_TYPE_STR,
-				Tags: []string{"nullable"}}},
+				Name:   "__" + Column.Name + "__email_reverse_login",
+				Type:   FMT_TYPE_STR,
+				Tags:   []string{"nullable"},
+				MaxLen: Column.MaxLen},
+			{
+				Name:   "__" + Column.Name + "__email_bidirect_login",
+				Type:   FMT_TYPE_STR,
+				Tags:   []string{"nullable"},
+				MaxLen: Column.MaxLen * 2}},
 		[]FormatterIndex{
-			{ColumnName: "__" + ColumnName + "__email_sanitized",
-				IndexName: "__" + ColumnName + "__email_reverse_sanitized",
+			{ColumnName: "__" + Column.Name + "__email_sanitized",
+				IndexName: "__" + Column.Name + "__email_reverse_sanitized",
 				Reversed:  true},
-			{ColumnName: "__" + ColumnName + "__email_reverse_login",
-				IndexName: "__" + ColumnName + "__email_reverse_login",
+			{ColumnName: "__" + Column.Name + "__email_reverse_login",
+				IndexName: "__" + Column.Name + "__email_reverse_login",
 				Reversed:  false},
-			{ColumnName: "__" + ColumnName + "__email_sanitized",
-				IndexName: "__" + ColumnName + "__email_sanitized",
+			{ColumnName: "__" + Column.Name + "__email_sanitized",
+				IndexName: "__" + Column.Name + "__email_sanitized",
+				Reversed:  false},
+			{ColumnName: "__" + Column.Name + "__email_bidirect_login",
+				IndexName: "__" + Column.Name + "__email_bidirect_login",
 				Reversed:  false}},
 		nil
 }
 
-func (a *EmailAnalyzer) Analyze(row map[string]*string) error {
-	v, e := row[a.ColumnName]
+func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
+	v, e := (*row)[a.ColumnName]
 
 	if !e || v == nil || strings.IndexByte(*v, '@') == -1 {
 		return nil
@@ -48,7 +58,7 @@ func (a *EmailAnalyzer) Analyze(row map[string]*string) error {
 	// TODO: error
 	domain, _ := idna.ToASCII(vv[strings.IndexByte(vv, '@')+1:])
 	var login string
-	if strings.IndexByte(vv, '+') != -1 {
+	if strings.IndexByte(vv, '+') != -1 && strings.IndexByte(vv, '+') < strings.IndexByte(vv, '@') {
 		login = vv[:strings.IndexByte(vv, '+')]
 	} else {
 		login = vv[:strings.IndexByte(vv, '@')]
@@ -57,12 +67,17 @@ func (a *EmailAnalyzer) Analyze(row map[string]*string) error {
 
 	{
 		tmp := fmt.Sprint(login, "@", domain)
-		row["__"+a.ColumnName+"_sanitized"] = &tmp
+		(*row)["__"+a.ColumnName+"__email_sanitized"] = &tmp
 	}
 
 	{
 		tmp := reverse_str(login)
-		row["__"+a.ColumnName+"_reverse_login"] = &tmp
+		(*row)["__"+a.ColumnName+"__email_reverse_login"] = &tmp
+	}
+
+	{
+		tmp := BidirectionalizeTextA(login)
+		(*row)["__"+a.ColumnName+"__email_bidirect_login"] = &tmp
 	}
 
 	return nil

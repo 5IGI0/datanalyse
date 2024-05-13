@@ -18,12 +18,19 @@ type Hinter struct {
 	UInt32Row uint64
 	Email     uint64
 	// TODO: UInt64Row uint64
+
+	MaxLen int
+	MinLen int
 }
 
 type TypeHint struct {
 	TypeName string
 	Priority uint8
 	Match    uint64
+}
+
+func (h *Hinter) Init() {
+	h.MinLen = -1
 }
 
 // TODO: boolean / sex / country / ...
@@ -34,6 +41,14 @@ func (h *Hinter) Analyze(row *string) {
 	if row == nil {
 		h.NullRow++
 		return
+	}
+
+	if len(*row) > int(h.MaxLen) {
+		h.MaxLen = len(*row)
+	}
+
+	if h.MinLen == -1 || h.MinLen > len(*row) {
+		h.MinLen = len(*row)
 	}
 
 	intval, err := strconv.ParseInt(*row, 10, 64)
@@ -65,6 +80,14 @@ func (h *Hinter) Analyze(row *string) {
 			h.Email++
 		}
 	}
+}
+
+func (h *Hinter) GetMaxLen() int {
+	return h.MaxLen
+}
+
+func (h *Hinter) GetMinLen() int {
+	return h.MinLen
 }
 
 func (h *Hinter) GetType() string {
