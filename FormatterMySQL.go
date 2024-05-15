@@ -15,6 +15,7 @@ type MySQLFormatter struct {
 	Indexes     []FormatterIndex
 	reverse_idx ReverseIndexEmulator
 	CachedQuery strings.Builder
+	InternalId  uint32
 }
 
 func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, indexes []FormatterIndex) error {
@@ -32,7 +33,7 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 
 	columns = append(columns, f.reverse_idx.Init(&indexes)...)
 
-	f.Columns = columns
+	f.Columns = append([]FormatterColumn{{Name: "__internal_id", Type: FMT_TYPE_UINT32, Tags: []string{"nonnull"}}}, columns...)
 	f.Indexes = indexes
 
 	f.Writer.WriteString("CREATE TABLE `")
@@ -62,7 +63,7 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 			f.Writer.WriteString(" NOT NULL")
 		}
 	}
-	f.Writer.WriteString(");\n")
+	f.Writer.WriteString(",\n\tPRIMARY KEY(`__internal_id`));\n")
 	return nil
 }
 
@@ -93,6 +94,12 @@ func (f *MySQLFormatter) _startInsertQuery() {
 
 func (f *MySQLFormatter) _encodeRow(row map[string]*string) string {
 	var output string = "("
+
+	{
+		tmp := fmt.Sprint(f.InternalId)
+		row["__internal_id"] = &tmp
+		f.InternalId++
+	}
 
 	for i, col := range f.Columns {
 		tmp := row[col.Name]
