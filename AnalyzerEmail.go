@@ -57,6 +57,7 @@ func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
 
 	// TODO: error
 	domain, _ := idna.ToASCII(vv[strings.IndexByte(vv, '@')+1:])
+	domain = strings.ToLower(domain)
 	var login string
 	if strings.IndexByte(vv, '+') != -1 && strings.IndexByte(vv, '+') < strings.IndexByte(vv, '@') {
 		login = vv[:strings.IndexByte(vv, '+')]

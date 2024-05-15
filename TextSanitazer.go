@@ -58,5 +58,5 @@ func OnlyAlphaNum(text string) string {
 			ret.WriteRune(c)
 		}
 	}
-	return ret.String()
+	return strings.ToLower(ret.String())
 }

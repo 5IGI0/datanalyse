@@ -44,7 +44,8 @@ func hinter() {
 		} else {
 			a = true
 		}
-		fmt.Print("  --column-type=", k, ":", h.GetType(), ":", strings.Join(h.get_tags(), ":"))
+		fmt.Print("  --column-type=", k, ":", h.GetType())
+		fmt.Print(" \\\n  --column-tags=", k, ":", strings.Join(h.get_tags(), ":"))
 
 		if h.GetType() == "str" {
 			fmt.Print(" \\\n  --column-len=", k, ":", h.GetMaxLen(), ":", h.GetMinLen())

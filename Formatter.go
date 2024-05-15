@@ -11,6 +11,7 @@ type FormatterColumn struct {
 	Type       int8
 	Tags       []string
 	MaxLen     int
+	MinLen     int
 	IsLenFixed bool
 }
 

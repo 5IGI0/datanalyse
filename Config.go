@@ -6,10 +6,18 @@ import (
 	"os"
 )
 
-type ColumnLen struct {
-	Max int
-	Min int
+type ColumnInfo struct {
+	Type   string
+	Tags   []string
+	MaxLen int
+	MinLen int
 }
+
+func (c *ColumnInfo) Init() {
+	c.MaxLen = -1
+	c.MinLen = -1
+}
+
 type Config struct {
 	// scanner config
 	Scanner   string
@@ -32,15 +40,13 @@ type Config struct {
 	FmtSQLMaxQuerySize int64
 
 	// Analyzer config
-	ColumnTypes map[string][]string
-	ColumnLens  map[string]*ColumnLen
+	ColumnInfos map[string]*ColumnInfo
 }
 
 var config = Config{}
 
 func ParseConfig() {
-	config.ColumnTypes = make(map[string][]string)
-	config.ColumnLens = make(map[string]*ColumnLen)
+	config.ColumnInfos = make(map[string]*ColumnInfo)
 
 	// scanner config
 	flag.StringVar(&config.Scanner, "scanner", "csv", "What scanner to use (default: csv)")
@@ -63,8 +69,9 @@ func ParseConfig() {
 	flag.Int64Var(&config.FmtSQLMaxQuerySize, "sql-max-query-size", 1048576, "Max SQL query size")
 
 	// Analyzer config
-	flag.Var(&ColumnTypes{&config.ColumnTypes}, "column-type", "Specify column's type, format: <column name>:<type>:<tags:...>")
-	flag.Var(&ColumnLenVar{&config.ColumnLens}, "column-len", "Specify column's len, format: <column name>:<max len>[:<min len>]")
+	flag.Var(&ColumnTypeVar{&config.ColumnInfos}, "column-type", "Specify column's type, format: <column name>:<type>")
+	flag.Var(&ColumnLenVar{&config.ColumnInfos}, "column-len", "Specify column's len, format: <column name>:<max len>[:<min len>]")
+	flag.Var(&ColumnTagsVar{&config.ColumnInfos}, "column-tags", "Specify column's tags, format: <column name>:<tags>:...")
 
 	flag.Parse()
 

@@ -68,7 +68,7 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 
 func (f *MySQLFormatter) get_string_type(column FormatterColumn) string {
 	if column.IsLenFixed {
-		return fmt.Sprint("CHAR(", column.IsLenFixed, ")")
+		return fmt.Sprint("CHAR(", column.MaxLen, ")")
 	} else if column.MaxLen != 0 && column.MaxLen < 1024 {
 		return fmt.Sprint("VARCHAR(", column.MaxLen, ")")
 	}

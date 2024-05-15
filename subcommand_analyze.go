@@ -44,13 +44,6 @@ func analyzer() {
 
 }
 
-func analyzer_setlen(col *FormatterColumn) {
-	if v, e := config.ColumnLens[col.Name]; e && v != nil {
-		col.IsLenFixed = v.Max == v.Min
-		col.MaxLen = v.Max
-	}
-}
-
 func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []FormatterIndex, []Analyzer) {
 	var output_columns []FormatterColumn
 	var output_indexes []FormatterIndex
@@ -59,29 +52,27 @@ func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []Format
 	fields := scanner.Fields()
 
 	for _, f := range fields {
-		types, e := config.ColumnTypes[f]
+		colinf, e := config.ColumnInfos[f]
 
-		if !e || len(types) == 0 {
+		if !e || len(colinf.Type) == 0 {
 			Warn(fmt.Sprintf("no type was specified for `%s`, interpreted as nullable string.", f))
 			output_columns = append(output_columns, FormatterColumn{
-				Name: f, Type: FMT_TYPE_STR, Tags: []string{"nullable"}})
-
-			analyzer_setlen(&output_columns[len(output_columns)-1])
+				Name: f, Type: FMT_TYPE_STR, Tags: []string{"nullable"},
+				MaxLen: colinf.MaxLen, MinLen: colinf.MinLen, IsLenFixed: colinf.MaxLen == colinf.MinLen})
 		} else {
-			fmt_type := StrType2FmtType(types[0])
+			fmt_type := StrType2FmtType(colinf.Type)
 
 			if fmt_type == FMT_TYPE_UNKNOWN {
-				Warn(fmt.Sprintf("invalid type `%s`, `%s` interpreted as nullable string.", types[0], f))
+				Warn(fmt.Sprintf("invalid type `%s`, `%s` interpreted as nullable string.", colinf.Type, f))
 				output_columns = append(output_columns, FormatterColumn{
-					Name: f, Type: FMT_TYPE_STR, Tags: []string{"nullable"}})
-				analyzer_setlen(&output_columns[len(output_columns)-1])
+					Name: f, Type: FMT_TYPE_STR, Tags: []string{"nullable"},
+					MaxLen: colinf.MaxLen, MinLen: colinf.MinLen, IsLenFixed: colinf.MaxLen == colinf.MinLen})
 			} else {
 				output_columns = append(output_columns, FormatterColumn{
-					Name: f, Type: fmt_type, Tags: types[1:]})
+					Name: f, Type: fmt_type, Tags: colinf.Tags,
+					MaxLen: colinf.MaxLen, MinLen: colinf.MinLen, IsLenFixed: colinf.MaxLen == colinf.MinLen})
 
-				analyzer_setlen(&output_columns[len(output_columns)-1])
-
-				for _, tag := range types[1:] {
+				for _, tag := range colinf.Tags {
 					//log.Println(tag)
 					if analyzer := GetAnalyzer(tag); analyzer != nil {
 						c, i, e := analyzer.Init(output_columns[len(output_columns)-1])

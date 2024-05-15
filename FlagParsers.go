@@ -19,22 +19,34 @@ func (v MultipleVars) Set(s string) error {
 	return nil
 }
 
-type ColumnTypes struct {
-	types *map[string][]string
+type ColumnTypeVar struct {
+	vars *map[string]*ColumnInfo
 }
 
-func (v ColumnTypes) String() string {
+func (v ColumnTypeVar) String() string {
 	return ""
 }
 
-func (v ColumnTypes) Set(s string) error {
+func (v ColumnTypeVar) Set(s string) error {
 	tmp := strings.Split(s, ":")
-	(*v.types)[tmp[0]] = tmp[1:]
+	if len(tmp) != 2 {
+		return errors.New("invalid")
+	}
+
+	if vv, e := (*v.vars)[tmp[0]]; e {
+		vv.Type = tmp[1]
+	} else {
+		t := ColumnInfo{}
+		t.Init()
+		t.Type = tmp[1]
+		(*v.vars)[tmp[0]] = &t
+	}
+
 	return nil
 }
 
 type ColumnLenVar struct {
-	Lens *map[string]*ColumnLen
+	vars *map[string]*ColumnInfo
 }
 
 func (v ColumnLenVar) String() string {
@@ -42,26 +54,60 @@ func (v ColumnLenVar) String() string {
 }
 
 func (v ColumnLenVar) Set(s string) error {
-	splitted := strings.Split(s, ":")
-	var val ColumnLen
-	var err error
-
-	if len(splitted) != 2 && len(splitted) != 3 {
+	tmp := strings.Split(s, ":")
+	if len(tmp) != 2 && len(tmp) != 3 {
 		return errors.New("invalid")
 	}
 
-	if val.Max, err = strconv.Atoi(splitted[1]); err != nil {
+	max, err := strconv.Atoi(tmp[1])
+	min := -1
+	if err != nil {
 		return err
 	}
 
-	if len(splitted) == 2 {
-		val.Min = -1
-	} else {
-		if val.Min, err = strconv.Atoi(splitted[2]); err != nil {
+	if len(tmp) >= 3 {
+		min, err = strconv.Atoi(tmp[1])
+		if err != nil {
 			return err
 		}
 	}
 
-	(*v.Lens)[splitted[0]] = &val
+	if vv, e := (*v.vars)[tmp[0]]; e {
+		vv.MaxLen = max
+		vv.MinLen = min
+	} else {
+		t := ColumnInfo{Type: tmp[1]}
+		t.Init()
+		t.MaxLen = max
+		t.MinLen = min
+		(*v.vars)[tmp[0]] = &t
+	}
+
+	return nil
+}
+
+type ColumnTagsVar struct {
+	vars *map[string]*ColumnInfo
+}
+
+func (v ColumnTagsVar) String() string {
+	return ""
+}
+
+func (v ColumnTagsVar) Set(s string) error {
+	tmp := strings.Split(s, ":")
+	if len(tmp) < 2 {
+		return errors.New("invalid")
+	}
+
+	if vv, e := (*v.vars)[tmp[0]]; e {
+		vv.Tags = append(vv.Tags, tmp[1:]...)
+	} else {
+		t := ColumnInfo{}
+		t.Init()
+		t.Tags = tmp[1:]
+		(*v.vars)[tmp[0]] = &t
+	}
+
 	return nil
 }
