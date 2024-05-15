@@ -38,6 +38,7 @@ type Config struct {
 	// SQL Formatters config
 	FmtSQLTable        string
 	FmtSQLMaxQuerySize int64
+	FmtSQLInvisible    bool
 
 	// Analyzer config
 	ColumnInfos map[string]*ColumnInfo
@@ -67,6 +68,7 @@ func ParseConfig() {
 	// SQL Formatters config
 	flag.StringVar(&config.FmtSQLTable, "sql-table", "", "Output table name")
 	flag.Int64Var(&config.FmtSQLMaxQuerySize, "sql-max-query-size", 1048576, "Max SQL query size")
+	flag.BoolVar(&config.FmtSQLInvisible, "sql-invisible-columns", true, "Should set auto-generated columns as 'invisible' (only visible when explicitely put in SELECT queries)")
 
 	// Analyzer config
 	flag.Var(&ColumnTypeVar{&config.ColumnInfos}, "column-type", "Specify column's type, format: <column name>:<type>")

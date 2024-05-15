@@ -11,25 +11,52 @@ type EmailAnalyzer struct {
 	ColumnName string
 }
 
+type EmailAnalyzerMetaColumnInfo struct {
+	LinkedColumn string `json:"linked_col"`
+	ColumnType   string `json:"coltyp"`
+	Version      uint32 `json:"ver"`
+}
+
 func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
 	a.ColumnName = Column.Name
 
 	return []FormatterColumn{
 			{
-				Name:   "__" + Column.Name + "__email_sanitized",
-				Type:   FMT_TYPE_STR,
-				Tags:   []string{"nullable"},
-				MaxLen: Column.MaxLen},
+				Name:        "__" + Column.Name + "__email_sanitized",
+				Type:        FMT_TYPE_STR,
+				Tags:        []string{"nullable"},
+				MaxLen:      Column.MaxLen,
+				IsInvisible: true,
+				Generator:   a,
+				GeneratorData: EmailAnalyzerMetaColumnInfo{
+					LinkedColumn: a.ColumnName,
+					ColumnType:   "sanitized",
+					Version:      1,
+				}},
 			{
-				Name:   "__" + Column.Name + "__email_reverse_login",
-				Type:   FMT_TYPE_STR,
-				Tags:   []string{"nullable"},
-				MaxLen: Column.MaxLen},
+				Name:        "__" + Column.Name + "__email_reverse_login",
+				Type:        FMT_TYPE_STR,
+				Tags:        []string{"nullable"},
+				MaxLen:      Column.MaxLen,
+				IsInvisible: true,
+				Generator:   a,
+				GeneratorData: EmailAnalyzerMetaColumnInfo{
+					LinkedColumn: a.ColumnName,
+					ColumnType:   "reverse_login",
+					Version:      1,
+				}},
 			{
-				Name:   "__" + Column.Name + "__email_bidirect_login",
-				Type:   FMT_TYPE_STR,
-				Tags:   []string{"nullable"},
-				MaxLen: Column.MaxLen * 2}},
+				Name:        "__" + Column.Name + "__email_bidirect_login",
+				Type:        FMT_TYPE_STR,
+				Tags:        []string{"nullable"},
+				MaxLen:      Column.MaxLen * 2,
+				IsInvisible: true,
+				Generator:   a,
+				GeneratorData: EmailAnalyzerMetaColumnInfo{
+					LinkedColumn: a.ColumnName,
+					ColumnType:   "bidirect_login",
+					Version:      1,
+				}}},
 		[]FormatterIndex{
 			{ColumnName: "__" + Column.Name + "__email_sanitized",
 				IndexName: "__" + Column.Name + "__email_reverse_sanitized",
@@ -82,4 +109,12 @@ func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
 	}
 
 	return nil
+}
+
+func (a *EmailAnalyzer) GetGeneratorInfo() GeneratorInfo {
+	return GeneratorInfo{
+		Name:          "email_analyzer",
+		VersionString: "1.0",
+		VersionId:     0x010000,
+	}
 }

@@ -7,12 +7,17 @@ type Formatter interface {
 }
 
 type FormatterColumn struct {
-	Name       string
-	Type       int8
-	Tags       []string
-	MaxLen     int
-	MinLen     int
-	IsLenFixed bool
+	Name        string
+	Type        int8
+	Tags        []string
+	MaxLen      int
+	MinLen      int
+	IsLenFixed  bool
+	IsInvisible bool
+	Generator   interface {
+		GetGeneratorInfo() GeneratorInfo
+	}
+	GeneratorData any
 }
 
 const (

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
@@ -62,6 +63,13 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 		if slices.Index(col.Tags, "nonnull") != -1 {
 			f.Writer.WriteString(" NOT NULL")
 		}
+
+		if col.IsInvisible && config.FmtSQLInvisible {
+			f.Writer.WriteString(" INVISIBLE")
+		}
+
+		f.Writer.WriteString(" COMMENT ")
+		f.Writer.WriteString(EscapeString(f.generate_column_comment(&col)))
 	}
 	f.Writer.WriteString(",\n\tPRIMARY KEY(`__internal_id`));\n")
 	return nil
@@ -152,4 +160,24 @@ func (f *MySQLFormatter) Close() {
 	}
 	f.Writer.Flush()
 	f.OutputFile.Close()
+}
+
+func (f *MySQLFormatter) generate_column_comment(column *FormatterColumn) string {
+	var tmp struct {
+		Generator     *GeneratorInfo `json:"generator"`
+		GeneratorData any            `json:"generator_data"`
+		IsInvisible   bool           `json:"is_invisible"`
+		Tags          []string       `json:"tags"`
+	}
+
+	if column.Generator != nil {
+		inf := column.Generator.GetGeneratorInfo()
+		tmp.Generator = &inf
+	}
+	tmp.GeneratorData = column.GeneratorData
+	tmp.IsInvisible = column.IsInvisible
+	tmp.Tags = column.Tags
+
+	b, _ := json.Marshal(tmp)
+	return string(b)
 }

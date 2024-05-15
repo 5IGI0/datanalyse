@@ -6,16 +6,23 @@ type ReverseIndexEmulator struct {
 	Indexes []FormatterIndex
 }
 
+type ReverseIndexEmulatorIdxInfo struct {
+	LinkedColumn string `json:"linked_column"`
+}
+
 func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex) []FormatterColumn {
 	var ret []FormatterColumn
 
 	for i, index := range *indexes {
 		if index.Reversed {
 			ret = append(ret, FormatterColumn{
-				Name: "__emidx_" + index.ColumnName,
-				Type: FMT_TYPE_STR,
-				Tags: []string{"nullable"},
-			})
+				Name:        "__emidx_" + index.ColumnName,
+				Type:        FMT_TYPE_STR,
+				Tags:        []string{"nullable"},
+				IsInvisible: true,
+				Generator:   e,
+				GeneratorData: ReverseIndexEmulatorIdxInfo{
+					LinkedColumn: index.ColumnName}})
 			e.Indexes = append(e.Indexes, index)
 			(*indexes)[i].ColumnName = "__emidx_" + index.ColumnName
 			(*indexes)[i].Reversed = false
@@ -64,4 +71,12 @@ func EscapeString(input string) string {
 
 	output.WriteByte('\'')
 	return output.String()
+}
+
+func (e *ReverseIndexEmulator) GetGeneratorInfo() GeneratorInfo {
+	return GeneratorInfo{
+		Name:          "reverse_index_emulator",
+		VersionString: "1.0.0",
+		VersionId:     0x010000,
+	}
 }
