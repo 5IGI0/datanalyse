@@ -111,3 +111,22 @@ func (v ColumnTagsVar) Set(s string) error {
 
 	return nil
 }
+
+type DatasetMetaVar struct {
+	vars *map[string]string
+}
+
+func (v DatasetMetaVar) String() string {
+	return ""
+}
+
+func (v DatasetMetaVar) Set(s string) error {
+	tmp := strings.IndexByte(s, ':')
+	if tmp < 0 {
+		return errors.New("invalid")
+	}
+
+	(*v.vars)[s[:tmp]] = s[tmp+1:]
+
+	return nil
+}

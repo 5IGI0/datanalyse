@@ -37,7 +37,9 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 	f.Columns = append([]FormatterColumn{{Name: "__internal_id", Type: FMT_TYPE_UINT32, Tags: []string{"nonnull"}}}, columns...)
 	f.Indexes = indexes
 
-	f.Writer.WriteString("CREATE TABLE `")
+	f.Writer.WriteString("SET SESSION sql_mode='';\nDROP TABLE IF EXISTS `")
+	f.Writer.WriteString(config.FmtSQLTable)
+	f.Writer.WriteString("`;\nCREATE TABLE `")
 	f.Writer.WriteString(config.FmtSQLTable)
 	f.Writer.WriteString("` (\n")
 
@@ -71,7 +73,8 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 		f.Writer.WriteString(" COMMENT ")
 		f.Writer.WriteString(EscapeString(f.generate_column_comment(&col)))
 	}
-	f.Writer.WriteString(",\n\tPRIMARY KEY(`__internal_id`));\n")
+	f.Writer.WriteString(",\n\tPRIMARY KEY(`__internal_id`)) COMMENT ")
+	f.Writer.WriteString(EscapeString(f.generate_table_comment()) + ";\n")
 	return nil
 }
 
@@ -177,6 +180,27 @@ func (f *MySQLFormatter) generate_column_comment(column *FormatterColumn) string
 	tmp.GeneratorData = column.GeneratorData
 	tmp.IsInvisible = column.IsInvisible
 	tmp.Tags = column.Tags
+
+	b, _ := json.Marshal(tmp)
+	return string(b)
+}
+
+func (f *MySQLFormatter) generate_table_comment() string {
+	var tmp struct {
+		Name        string            `json:"name"`
+		Description string            `json:"description"`
+		Version     uint32            `json:"version"`
+		Meta        map[string]string `json:"meta"`
+	}
+
+	if config.DatasetName != "" {
+		tmp.Name = config.DatasetName
+	} else {
+		tmp.Name = config.FmtSQLTable
+	}
+	tmp.Description = config.DatasetDescription
+	tmp.Version = 1
+	tmp.Meta = config.DatasetMeta
 
 	b, _ := json.Marshal(tmp)
 	return string(b)

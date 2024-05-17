@@ -28,7 +28,7 @@ func (u *UsernameAnalyzer) Init(col FormatterColumn) ([]FormatterColumn, []Forma
 			{Name: "__" + col.Name + "__username_bidirect",
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
-				MaxLen:      col.MaxLen,
+				MaxLen:      col.MaxLen * 2,
 				MinLen:      0,
 				IsInvisible: true,
 				Generator:   u,

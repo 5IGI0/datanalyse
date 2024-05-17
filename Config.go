@@ -33,7 +33,10 @@ type Config struct {
 	ScanCsvStripBy     string
 
 	// Formatters config
-	Formater string
+	Formater           string
+	DatasetName        string
+	DatasetDescription string
+	DatasetMeta        map[string]string
 
 	// SQL Formatters config
 	FmtSQLTable        string
@@ -48,6 +51,7 @@ var config = Config{}
 
 func ParseConfig() {
 	config.ColumnInfos = make(map[string]*ColumnInfo)
+	config.DatasetMeta = make(map[string]string)
 
 	// scanner config
 	flag.StringVar(&config.Scanner, "scanner", "csv", "What scanner to use (default: csv)")
@@ -64,6 +68,9 @@ func ParseConfig() {
 
 	// Formatters config
 	flag.StringVar(&config.Formater, "formatter", "MySQL", "What formatter to use (default: MySQL)")
+	flag.StringVar(&config.DatasetName, "dataset-name", "", "Specify dataset's name")
+	flag.StringVar(&config.DatasetDescription, "dataset-description", "", "Specify dataset's description")
+	flag.Var(DatasetMetaVar{&config.DatasetMeta}, "dataset-meta", "Specify dataset meta (format: <key>:<value>)")
 
 	// SQL Formatters config
 	flag.StringVar(&config.FmtSQLTable, "sql-table", "", "Output table name")
