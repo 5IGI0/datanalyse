@@ -16,6 +16,8 @@ func GetAnalyzer(tag string) Analyzer {
 	switch tag {
 	case "email":
 		return &EmailAnalyzer{}
+	case "username":
+		return &UsernameAnalyzer{}
 	}
 	return nil
 }
