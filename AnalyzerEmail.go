@@ -9,6 +9,11 @@ import (
 
 type EmailAnalyzer struct {
 	ColumnName string
+	Data       struct {
+		Sanitized     string `json:"sanitized"`
+		ReverseLogin  string `json:"reverse_login"`
+		BidirectLogin string `json:"bidirect_login"`
+	}
 }
 
 type EmailAnalyzerMetaColumnInfo struct {
@@ -20,9 +25,13 @@ type EmailAnalyzerMetaColumnInfo struct {
 func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
 	a.ColumnName = Column.Name
 
+	a.Data.Sanitized = "__" + Column.Name + "__email_sanitized"
+	a.Data.ReverseLogin = "__" + Column.Name + "__email_reverse_login"
+	a.Data.BidirectLogin = "__" + Column.Name + "__email_bidirect_login"
+
 	return []FormatterColumn{
 			{
-				Name:        "__" + Column.Name + "__email_sanitized",
+				Name:        a.Data.Sanitized,
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
 				MaxLen:      Column.MaxLen,
@@ -34,7 +43,7 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []Forma
 					Version:      1,
 				}},
 			{
-				Name:        "__" + Column.Name + "__email_reverse_login",
+				Name:        a.Data.ReverseLogin,
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
 				MaxLen:      Column.MaxLen,
@@ -46,7 +55,7 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []Forma
 					Version:      1,
 				}},
 			{
-				Name:        "__" + Column.Name + "__email_bidirect_login",
+				Name:        a.Data.BidirectLogin,
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
 				MaxLen:      Column.MaxLen * 2,
@@ -58,16 +67,16 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []Forma
 					Version:      1,
 				}}},
 		[]FormatterIndex{
-			{ColumnName: "__" + Column.Name + "__email_sanitized",
+			{ColumnName: a.Data.Sanitized,
 				IndexName: "__" + Column.Name + "__email_reverse_sanitized",
 				Reversed:  true},
-			{ColumnName: "__" + Column.Name + "__email_reverse_login",
+			{ColumnName: a.Data.ReverseLogin,
 				IndexName: "__" + Column.Name + "__email_reverse_login",
 				Reversed:  false},
-			{ColumnName: "__" + Column.Name + "__email_sanitized",
+			{ColumnName: a.Data.Sanitized,
 				IndexName: "__" + Column.Name + "__email_sanitized",
 				Reversed:  false},
-			{ColumnName: "__" + Column.Name + "__email_bidirect_login",
+			{ColumnName: a.Data.BidirectLogin,
 				IndexName: "__" + Column.Name + "__email_bidirect_login",
 				Reversed:  false}},
 		nil
@@ -95,17 +104,17 @@ func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
 
 	{
 		tmp := fmt.Sprint(login, "@", domain)
-		(*row)["__"+a.ColumnName+"__email_sanitized"] = &tmp
+		(*row)[a.Data.Sanitized] = &tmp
 	}
 
 	{
 		tmp := reverse_str(login)
-		(*row)["__"+a.ColumnName+"__email_reverse_login"] = &tmp
+		(*row)[a.Data.ReverseLogin] = &tmp
 	}
 
 	{
 		tmp := BidirectionalizeTextA(login)
-		(*row)["__"+a.ColumnName+"__email_bidirect_login"] = &tmp
+		(*row)[a.Data.BidirectLogin] = &tmp
 	}
 
 	return nil
@@ -117,4 +126,8 @@ func (a *EmailAnalyzer) GetGeneratorInfo() GeneratorInfo {
 		VersionString: "1.0",
 		VersionId:     0x010000,
 	}
+}
+
+func (a *EmailAnalyzer) GetAnalyzerData() any {
+	return a.Data
 }

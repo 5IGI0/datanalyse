@@ -2,6 +2,10 @@ package main
 
 type UsernameAnalyzer struct {
 	ColumnName string
+	Data       struct {
+		Sanitized string `json:"sanitized"`
+		Bidirect  string `json:"bidirect"`
+	}
 }
 
 type UsernameAnalyzerMetaColumnInfo struct {
@@ -13,8 +17,11 @@ type UsernameAnalyzerMetaColumnInfo struct {
 func (u *UsernameAnalyzer) Init(col FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
 	u.ColumnName = col.Name
 
+	u.Data.Sanitized = "__" + col.Name + "__username_sanitized"
+	u.Data.Bidirect = "__" + col.Name + "__username_bidirect"
+
 	return []FormatterColumn{
-			{Name: "__" + col.Name + "__username_sanitized",
+			{Name: u.Data.Sanitized,
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
 				MaxLen:      col.MaxLen,
@@ -25,7 +32,7 @@ func (u *UsernameAnalyzer) Init(col FormatterColumn) ([]FormatterColumn, []Forma
 					LinkedColumn: col.Name,
 					ColumnType:   "sanitized",
 					Version:      1}},
-			{Name: "__" + col.Name + "__username_bidirect",
+			{Name: u.Data.Bidirect,
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
 				MaxLen:      col.MaxLen * 2,
@@ -37,13 +44,13 @@ func (u *UsernameAnalyzer) Init(col FormatterColumn) ([]FormatterColumn, []Forma
 					ColumnType:   "bidirect",
 					Version:      1}}},
 		[]FormatterIndex{
-			{ColumnName: "__" + col.Name + "__username_sanitized",
+			{ColumnName: u.Data.Sanitized,
 				IndexName: "__" + col.Name + "__username_sanitized",
 				Reversed:  false},
-			{ColumnName: "__" + col.Name + "__username_sanitized",
+			{ColumnName: u.Data.Sanitized,
 				IndexName: "__" + col.Name + "__username_reverse_sanitized",
 				Reversed:  true},
-			{ColumnName: "__" + col.Name + "__username_bidirect",
+			{ColumnName: u.Data.Bidirect,
 				IndexName: "__" + col.Name + "__username_bidirect",
 				Reversed:  true}},
 		nil
@@ -53,9 +60,9 @@ func (u *UsernameAnalyzer) Analyze(row *map[string]*string) error {
 	if v, e := (*row)[u.ColumnName]; e && v != nil {
 		sanitized := OnlyAlphaNum(*v)
 
-		(*row)["__"+u.ColumnName+"__username_sanitized"] = &sanitized
+		(*row)[u.Data.Sanitized] = &sanitized
 		bidirect := BidirectionalizeTextA(sanitized)
-		(*row)["__"+u.ColumnName+"__username_bidirect"] = &bidirect
+		(*row)[u.Data.Bidirect] = &bidirect
 	}
 
 	return nil
@@ -67,4 +74,8 @@ func (u *UsernameAnalyzer) GetGeneratorInfo() GeneratorInfo {
 		VersionString: "1.0.0",
 		VersionId:     0x010000,
 	}
+}
+
+func (u *UsernameAnalyzer) GetAnalyzerData() any {
+	return u.Data
 }

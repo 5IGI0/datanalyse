@@ -166,12 +166,19 @@ func (f *MySQLFormatter) Close() {
 }
 
 func (f *MySQLFormatter) generate_column_comment(column *FormatterColumn) string {
+	type AnalyzerManifest struct {
+		Analyzer GeneratorInfo `json:"analyzer"`
+		Data     any           `json:"data"`
+	}
+
 	var tmp struct {
 		Generator     *GeneratorInfo `json:"generator"`
 		GeneratorData any            `json:"generator_data"`
 		IsInvisible   bool           `json:"is_invisible"`
 		Tags          []string       `json:"tags"`
+		Analyzers     map[string]AnalyzerManifest
 	}
+	tmp.Analyzers = make(map[string]AnalyzerManifest)
 
 	if column.Generator != nil {
 		inf := column.Generator.GetGeneratorInfo()
@@ -180,6 +187,11 @@ func (f *MySQLFormatter) generate_column_comment(column *FormatterColumn) string
 	tmp.GeneratorData = column.GeneratorData
 	tmp.IsInvisible = column.IsInvisible
 	tmp.Tags = column.Tags
+
+	for _, analyzer := range column.Analyzers {
+		info := analyzer.GetGeneratorInfo()
+		tmp.Analyzers[info.Name] = AnalyzerManifest{Analyzer: info, Data: analyzer.GetAnalyzerData()}
+	}
 
 	b, _ := json.Marshal(tmp)
 	return string(b)

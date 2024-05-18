@@ -18,6 +18,7 @@ type FormatterColumn struct {
 		GetGeneratorInfo() GeneratorInfo
 	}
 	GeneratorData any
+	Analyzers     []Analyzer
 }
 
 const (

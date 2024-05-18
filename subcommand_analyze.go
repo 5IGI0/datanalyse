@@ -80,6 +80,7 @@ func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []Format
 							panic(e)
 						}
 
+						output_columns[len(output_columns)-1].Analyzers = append(output_columns[len(output_columns)-1].Analyzers, analyzer)
 						output_columns = append(output_columns, c...)
 						output_indexes = append(output_indexes, i...)
 						output_analyzers = append(output_analyzers, analyzer)
