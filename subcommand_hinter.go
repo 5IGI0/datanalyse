@@ -45,10 +45,24 @@ func hinter() {
 			a = true
 		}
 		fmt.Print("  --column-type=", k, ":", h.GetType())
-		fmt.Print(" \\\n  --column-tags=", k, ":", strings.Join(h.get_tags(), ":"))
+		fmt.Print(" \\\n  --column-tags=", k, ":", strings.Join(h.GetTags(), ":"))
 
 		if h.GetType() == "str" {
 			fmt.Print(" \\\n  --column-len=", k, ":", h.GetMaxLen(), ":", h.GetMinLen())
+		}
+	}
+
+	// stuff that need to be "manually checked"
+	a = false
+	for k, h := range hinters {
+		tags := h.GuessTags(k)
+
+		if len(tags) != 0 {
+			if !a {
+				a = true
+				fmt.Print(" \\\n ")
+			}
+			fmt.Print(" \\\n  --column-tags=", k, ":", strings.Join(tags, ":"))
 		}
 	}
 	fmt.Print("\n")

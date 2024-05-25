@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -119,7 +120,7 @@ func (h *Hinter) GetTypeHints() []TypeHint {
 	return tmp
 }
 
-func (h *Hinter) get_tags() []string {
+func (h *Hinter) GetTags() []string {
 	ret := []string{}
 
 	if h.NullRow == h.TotalRow {
@@ -134,6 +135,20 @@ func (h *Hinter) get_tags() []string {
 	// TODO: find the right trigger value
 	if h.Email*2 >= (h.TotalRow - h.NullRow) {
 		ret = append(ret, "email")
+	}
+
+	return ret
+}
+
+func (h *Hinter) GuessTags(colname string) []string {
+	ret := []string{}
+
+	colname = OnlyAlphaNum(colname)
+
+	if h.Int64Row*2 >= (h.TotalRow - h.NullRow) {
+		if slices.Contains(FacebookColNames, colname) {
+			ret = append(ret, "facebook_id")
+		}
 	}
 
 	return ret
