@@ -19,6 +19,10 @@ type MySQLFormatter struct {
 	InternalId  uint32
 }
 
+func (f *MySQLFormatter) GetFeatures() int {
+	return FMT_FEATURE_GENERATED_AS
+}
+
 func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, indexes []FormatterIndex) error {
 	if output_file == "-" {
 		f.OutputFile = os.Stdout
@@ -62,11 +66,27 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 			FMT_TYPE_UINT64: "BIG UNSIGNED",
 		}[col.Type])
 		f.Writer.WriteString(" ")
-		if slices.Index(col.Tags, "nonnull") != -1 {
-			f.Writer.WriteString(" NOT NULL")
+
+		/* always generated as */
+
+		if col.AlwaysGeneratedAs == "" {
+			/* cannot use NOT NULL on generated values (mariadb) */
+			if slices.Index(col.Tags, "nonnull") != -1 {
+				f.Writer.WriteString(" NOT NULL")
+			}
+		} else {
+			f.Writer.WriteString(" GENERATED ALWAYS AS (")
+			f.Writer.WriteString(col.AlwaysGeneratedAs)
+
+			/* if it is invisible, then we don't store it */
+			if col.IsInvisible {
+				f.Writer.WriteString(") VIRTUAL")
+			} else {
+				f.Writer.WriteString(") STORED")
+			}
 		}
 
-		if col.IsInvisible && config.FmtSQLInvisible {
+		if col.IsInvisible {
 			f.Writer.WriteString(" INVISIBLE")
 		}
 
@@ -93,12 +113,16 @@ func (f *MySQLFormatter) _startInsertQuery() {
 	f.CachedQuery.WriteString("INSERT INTO `")
 	f.CachedQuery.WriteString(config.FmtSQLTable)
 	f.CachedQuery.WriteString("`(`")
-	for i, col := range f.Columns {
+	i := 0
+	for _, col := range f.Columns {
+		if col.AlwaysGeneratedAs != "" {
+			continue
+		}
 		if i != 0 {
 			f.CachedQuery.WriteString("`,`")
-
 		}
 		f.CachedQuery.WriteString(col.Name)
+		i++
 	}
 	f.CachedQuery.WriteString("`) VALUES\n")
 }
@@ -112,7 +136,11 @@ func (f *MySQLFormatter) _encodeRow(row map[string]*string) string {
 		f.InternalId++
 	}
 
-	for i, col := range f.Columns {
+	i := 0
+	for _, col := range f.Columns {
+		if col.AlwaysGeneratedAs != "" {
+			continue
+		}
 		tmp := row[col.Name]
 
 		if i != 0 {
@@ -124,6 +152,8 @@ func (f *MySQLFormatter) _encodeRow(row map[string]*string) string {
 		} else {
 			output += EscapeString(*tmp)
 		}
+
+		i++
 	}
 
 	output += ")\n"

@@ -66,7 +66,7 @@ func (v ColumnLenVar) Set(s string) error {
 	}
 
 	if len(tmp) >= 3 {
-		min, err = strconv.Atoi(tmp[1])
+		min, err = strconv.Atoi(tmp[2])
 		if err != nil {
 			return err
 		}

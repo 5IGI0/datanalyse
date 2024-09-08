@@ -1,18 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 
 	"golang.org/x/net/idna"
 )
 
 type EmailAnalyzer struct {
-	ColumnName string
-	Data       struct {
-		Sanitized     string `json:"sanitized"`
+	ColumnName     string
+	HasGeneratedAs bool
+	Data           struct {
 		ReverseLogin  string `json:"reverse_login"`
 		BidirectLogin string `json:"bidirect_login"`
+		ReverseDomain string `json:"ReverseDomain"`
 	}
 }
 
@@ -22,16 +22,17 @@ type EmailAnalyzerMetaColumnInfo struct {
 	Version      uint32 `json:"ver"`
 }
 
-func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
+func (a *EmailAnalyzer) Init(Column FormatterColumn, formatter Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	a.ColumnName = Column.Name
+	a.HasGeneratedAs = (formatter.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
 
-	a.Data.Sanitized = "__" + Column.Name + "__email_sanitized"
 	a.Data.ReverseLogin = "__" + Column.Name + "__email_reverse_login"
 	a.Data.BidirectLogin = "__" + Column.Name + "__email_bidirect_login"
+	a.Data.ReverseDomain = "__" + Column.Name + "__email_reverse_domain"
 
 	return []FormatterColumn{
 			{
-				Name:        a.Data.Sanitized,
+				Name:        a.Data.ReverseDomain,
 				Type:        FMT_TYPE_STR,
 				Tags:        []string{"nullable"},
 				MaxLen:      Column.MaxLen,
@@ -39,7 +40,7 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []Forma
 				Generator:   a,
 				GeneratorData: EmailAnalyzerMetaColumnInfo{
 					LinkedColumn: a.ColumnName,
-					ColumnType:   "sanitized",
+					ColumnType:   "reverse_domain",
 					Version:      1,
 				}},
 			{
@@ -48,7 +49,14 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []Forma
 				Tags:        []string{"nullable"},
 				MaxLen:      Column.MaxLen,
 				IsInvisible: true,
-				Generator:   a,
+				AlwaysGeneratedAs: CheckNull(a.ColumnName, newSqlExpr(a.ColumnName).
+					SplitBefore("@").
+					SplitBefore("+").
+					OnlyAlphaNum().
+					ToLower().
+					Reverse()).
+					String(),
+				Generator: a,
 				GeneratorData: EmailAnalyzerMetaColumnInfo{
 					LinkedColumn: a.ColumnName,
 					ColumnType:   "reverse_login",
@@ -67,17 +75,17 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []Forma
 					Version:      1,
 				}}},
 		[]FormatterIndex{
-			{ColumnName: a.Data.Sanitized,
-				IndexName: "__" + Column.Name + "__email_reverse_sanitized",
-				Reversed:  true},
-			{ColumnName: a.Data.ReverseLogin,
-				IndexName: "__" + Column.Name + "__email_reverse_login",
+			{ColumnName: Column.Name,
+				IndexName: "__" + Column.Name + "__email",
 				Reversed:  false},
-			{ColumnName: a.Data.Sanitized,
-				IndexName: "__" + Column.Name + "__email_sanitized",
+			{ColumnName: a.Data.ReverseLogin,
+				IndexName: a.Data.ReverseLogin,
 				Reversed:  false},
 			{ColumnName: a.Data.BidirectLogin,
-				IndexName: "__" + Column.Name + "__email_bidirect_login",
+				IndexName: a.Data.BidirectLogin,
+				Reversed:  false},
+			{ColumnName: a.Data.ReverseDomain,
+				IndexName: a.Data.ReverseDomain,
 				Reversed:  false}},
 		nil
 }
@@ -91,9 +99,6 @@ func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
 
 	vv := *v
 
-	// TODO: error
-	domain, _ := idna.ToASCII(vv[strings.IndexByte(vv, '@')+1:])
-	domain = strings.ToLower(domain)
 	var login string
 	if strings.IndexByte(vv, '+') != -1 && strings.IndexByte(vv, '+') < strings.IndexByte(vv, '@') {
 		login = vv[:strings.IndexByte(vv, '+')]
@@ -103,11 +108,13 @@ func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
 	login = OnlyAlphaNum(login)
 
 	{
-		tmp := fmt.Sprint(login, "@", domain)
-		(*row)[a.Data.Sanitized] = &tmp
+		domain, err := idna.ToASCII(vv[strings.IndexByte(vv, '@')+1:])
+		AssertError(err)
+		tmp := reverse_str(strings.ToLower(domain))
+		(*row)[a.Data.ReverseDomain] = &tmp
 	}
 
-	{
+	if !a.HasGeneratedAs {
 		tmp := reverse_str(login)
 		(*row)[a.Data.ReverseLogin] = &tmp
 	}

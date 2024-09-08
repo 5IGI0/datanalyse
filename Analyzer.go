@@ -7,7 +7,7 @@ type GeneratorInfo struct {
 }
 
 type Analyzer interface {
-	Init(FormatterColumn) ([]FormatterColumn, []FormatterIndex, error)
+	Init(FormatterColumn, Formatter) ([]FormatterColumn, []FormatterIndex, error)
 	Analyze(*map[string]*string) error
 	GetGeneratorInfo() GeneratorInfo
 	GetAnalyzerData() any

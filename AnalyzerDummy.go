@@ -6,7 +6,7 @@ type DummyAnalyzer struct {
 	Generator GeneratorInfo
 }
 
-func (*DummyAnalyzer) Init(Column FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
+func (*DummyAnalyzer) Init(Column FormatterColumn, _ Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	return nil, []FormatterIndex{
 		{
 			ColumnName: Column.Name,

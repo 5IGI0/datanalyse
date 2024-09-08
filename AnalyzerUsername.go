@@ -14,7 +14,7 @@ type UsernameAnalyzerMetaColumnInfo struct {
 	Version      uint32 `json:"ver"`
 }
 
-func (u *UsernameAnalyzer) Init(col FormatterColumn) ([]FormatterColumn, []FormatterIndex, error) {
+func (u *UsernameAnalyzer) Init(col FormatterColumn, _ Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	u.ColumnName = col.Name
 
 	u.Data.Sanitized = "__" + col.Name + "__username_sanitized"

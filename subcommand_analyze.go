@@ -15,8 +15,8 @@ func analyzer() {
 	}
 	defer scanner.Close()
 
-	c, i, analyzers := analyzer_setup_analyzers(scanner)
 	formatter := MySQLFormatter{}
+	c, i, analyzers := analyzer_setup_analyzers(scanner, &formatter)
 	output := flag.Arg(2)
 	if output == "" {
 		output = "-"
@@ -44,7 +44,7 @@ func analyzer() {
 
 }
 
-func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []FormatterIndex, []Analyzer) {
+func analyzer_setup_analyzers(scanner InputScanner, formatter Formatter) ([]FormatterColumn, []FormatterIndex, []Analyzer) {
 	var output_columns []FormatterColumn
 	var output_indexes []FormatterIndex
 	var output_analyzers []Analyzer
@@ -75,7 +75,7 @@ func analyzer_setup_analyzers(scanner InputScanner) ([]FormatterColumn, []Format
 				for _, tag := range colinf.Tags {
 					//log.Println(tag)
 					if analyzer := GetAnalyzer(tag); analyzer != nil {
-						c, i, e := analyzer.Init(output_columns[len(output_columns)-1])
+						c, i, e := analyzer.Init(output_columns[len(output_columns)-1], formatter)
 						if e != nil {
 							panic(e)
 						}

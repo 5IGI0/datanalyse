@@ -2,9 +2,14 @@ package main
 
 type Formatter interface {
 	Init(output_file string, columns []FormatterColumn, indexes []FormatterIndex) error
+	GetFeatures() int
 	WriteRow(map[string]*string) error
 	Close()
 }
+
+const (
+	FMT_FEATURE_GENERATED_AS = 1
+)
 
 type FormatterColumn struct {
 	Name        string
@@ -14,11 +19,15 @@ type FormatterColumn struct {
 	MinLen      int
 	IsLenFixed  bool
 	IsInvisible bool
-	Generator   interface {
+	// expression used to generate the targeted value
+	AlwaysGeneratedAs string
+	Generator         interface {
 		GetGeneratorInfo() GeneratorInfo
 	}
+	// data of the analyzer that generated this column
 	GeneratorData any
-	Analyzers     []Analyzer
+	// analyzers that will pass on it to generate new columns
+	Analyzers []Analyzer
 }
 
 const (

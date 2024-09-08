@@ -22,3 +22,9 @@ func reverse_str(s string) string {
 
 	return string(reversed)
 }
+
+func AssertError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
