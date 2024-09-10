@@ -3,10 +3,14 @@ package main
 import (
 	"strings"
 	"unicode/utf8"
+
+	gotextsanitizer "github.com/5IGI0/go-text-sanitizer"
 )
 
-func SanitizeText() {
-
+func SanitizeText(input string) string {
+	san, err := gotextsanitizer.Unidecode(input)
+	AssertError(err)
+	return san
 }
 
 func BidirectionalizeTextA(text string) string {
@@ -51,10 +55,25 @@ func BidirectionalizeTextW(text string) string {
 func OnlyAlphaNum(text string) string {
 	var ret strings.Builder
 
+	text = SanitizeText(text)
+
 	for _, c := range text {
 		if (c >= 'a' && c <= 'z') ||
 			(c >= 'A' && c <= 'Z') ||
 			(c >= '0' && c <= '9') {
+			ret.WriteRune(c)
+		}
+	}
+	return strings.ToLower(ret.String())
+}
+
+func OnlyNum(text string) string {
+	var ret strings.Builder
+
+	text = SanitizeText(text)
+
+	for _, c := range text {
+		if c >= '0' && c <= '9' {
 			ret.WriteRune(c)
 		}
 	}

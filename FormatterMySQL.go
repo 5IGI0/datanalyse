@@ -36,7 +36,7 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 
 	f.Writer = bufio.NewWriter(f.OutputFile)
 
-	columns = append(columns, f.reverse_idx.Init(&indexes)...)
+	columns = append(columns, f.reverse_idx.Init(&indexes, f)...)
 
 	f.Columns = append([]FormatterColumn{{Name: "__internal_id", Type: FMT_TYPE_UINT32, Tags: []string{"nonnull"}}}, columns...)
 	f.Indexes = indexes

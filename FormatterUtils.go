@@ -3,24 +3,28 @@ package main
 import "strings"
 
 type ReverseIndexEmulator struct {
-	Indexes []FormatterIndex
+	Indexes        []FormatterIndex
+	HasGeneratedAs bool
 }
 
 type ReverseIndexEmulatorIdxInfo struct {
 	LinkedColumn string `json:"linked_column"`
 }
 
-func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex) []FormatterColumn {
+func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex, f Formatter) []FormatterColumn {
 	var ret []FormatterColumn
+
+	e.HasGeneratedAs = (f.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
 
 	for i, index := range *indexes {
 		if index.Reversed {
 			ret = append(ret, FormatterColumn{
-				Name:        "__emidx_" + index.ColumnName,
-				Type:        FMT_TYPE_STR,
-				Tags:        []string{"nullable"},
-				IsInvisible: true,
-				Generator:   e,
+				Name:              "__emidx_" + index.ColumnName,
+				Type:              FMT_TYPE_STR,
+				Tags:              []string{"nullable"},
+				IsInvisible:       true,
+				AlwaysGeneratedAs: CheckNull(index.ColumnName, newSqlExpr(index.ColumnName).Reverse()).String(),
+				Generator:         e,
 				GeneratorData: ReverseIndexEmulatorIdxInfo{
 					LinkedColumn: index.ColumnName}})
 			e.Indexes = append(e.Indexes, index)
@@ -33,6 +37,9 @@ func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex) []FormatterColumn
 }
 
 func (e *ReverseIndexEmulator) Apply(rows *map[string]*string) {
+	if e.HasGeneratedAs {
+		return
+	}
 	for _, index := range e.Indexes {
 		if v, e := (*rows)[index.ColumnName]; e && v != nil {
 			tmp := reverse_str(*v)

@@ -19,6 +19,8 @@ func GetAnalyzer(tag string) Analyzer {
 		return &EmailAnalyzer{}
 	case "username":
 		return &UsernameAnalyzer{}
+	case "phone":
+		return &PhoneAnalyzer{}
 	case "facebook_id":
 		return &DummyAnalyzer{Data: nil, Generator: GeneratorInfo{
 			Name:          "fbid_analyzer",

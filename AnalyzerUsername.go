@@ -1,8 +1,9 @@
 package main
 
 type UsernameAnalyzer struct {
-	ColumnName string
-	Data       struct {
+	ColumnName     string
+	HasGeneratedAs bool
+	Data           struct {
 		Sanitized string `json:"sanitized"`
 		Bidirect  string `json:"bidirect"`
 	}
@@ -14,8 +15,9 @@ type UsernameAnalyzerMetaColumnInfo struct {
 	Version      uint32 `json:"ver"`
 }
 
-func (u *UsernameAnalyzer) Init(col FormatterColumn, _ Formatter) ([]FormatterColumn, []FormatterIndex, error) {
+func (u *UsernameAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	u.ColumnName = col.Name
+	u.HasGeneratedAs = (f.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
 
 	u.Data.Sanitized = "__" + col.Name + "__username_sanitized"
 	u.Data.Bidirect = "__" + col.Name + "__username_bidirect"

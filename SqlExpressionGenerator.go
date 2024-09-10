@@ -46,6 +46,12 @@ func (e SqlExprGenerator) OnlyAlphaNum() SqlExprGenerator {
 	}
 }
 
+func (e SqlExprGenerator) OnlyNum() SqlExprGenerator {
+	return SqlExprGenerator{
+		CurrentVal: "REGEXP_REPLACE(" + e.CurrentVal + ", '[^0-9]', '')",
+	}
+}
+
 func (e SqlExprGenerator) MaxLen(len uint) SqlExprGenerator {
 	return SqlExprGenerator{
 		CurrentVal: "LEFT(" + e.CurrentVal + ", " + fmt.Sprint(len) + ")",

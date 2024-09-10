@@ -1,3 +1,5 @@
+github.com/5IGI0/go-text-sanitizer v0.0.0-20240909162251-35f83af35fa0 h1:R2Sun2Z947fF/CMI/4agq5Aja58gUsPXO4Zp4QI7Udg=
+github.com/5IGI0/go-text-sanitizer v0.0.0-20240909162251-35f83af35fa0/go.mod h1:Mlsm6Vn8Wm+QjDQCADLSb9JdLBRY7sZdlW63g+b8BK0=
 golang.org/x/net v0.25.0 h1:d/OCCoBEUq33pjydKrGQhw7IlUPI2Oylr+8qLx49kac=
 golang.org/x/net v0.25.0/go.mod h1:JkAGAh7GEvH74S6FOH42FLoXpXbE/aqXSrIQjXgsiwM=
 golang.org/x/text v0.15.0 h1:h1V/4gjBv8v9cjcR6+AR5+/cIYK5N/WAgiv4xlsEtAk=
