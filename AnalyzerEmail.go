@@ -138,3 +138,7 @@ func (a *EmailAnalyzer) GetGeneratorInfo() GeneratorInfo {
 func (a *EmailAnalyzer) GetAnalyzerData() any {
 	return a.Data
 }
+
+func (a *EmailAnalyzer) GetAnalyzerType() int {
+	return ANALYZER_PHONE
+}

@@ -4,6 +4,7 @@ package main
 type DummyAnalyzer struct {
 	Data      any
 	Generator GeneratorInfo
+	Type      int
 }
 
 func (*DummyAnalyzer) Init(Column FormatterColumn, _ Formatter) ([]FormatterColumn, []FormatterIndex, error) {
@@ -25,4 +26,8 @@ func (d *DummyAnalyzer) GetGeneratorInfo() GeneratorInfo {
 
 func (d *DummyAnalyzer) GetAnalyzerData() any {
 	return d.Data
+}
+
+func (d *DummyAnalyzer) GetAnalyzerType() int {
+	return d.Type
 }

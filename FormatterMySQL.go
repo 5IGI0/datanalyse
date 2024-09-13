@@ -10,20 +10,21 @@ import (
 )
 
 type MySQLFormatter struct {
-	OutputFile  *os.File
-	Writer      *bufio.Writer
-	Columns     []FormatterColumn
-	Indexes     []FormatterIndex
-	reverse_idx ReverseIndexEmulator
-	CachedQuery strings.Builder
-	InternalId  uint32
+	OutputFile     *os.File
+	Writer         *bufio.Writer
+	Columns        []FormatterColumn
+	Indexes        []FormatterIndex
+	GroupAnalyzers []GroupAnalyzer
+	reverse_idx    ReverseIndexEmulator
+	CachedQuery    strings.Builder
+	InternalId     uint32
 }
 
 func (f *MySQLFormatter) GetFeatures() int {
 	return FMT_FEATURE_GENERATED_AS
 }
 
-func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, indexes []FormatterIndex) error {
+func (f *MySQLFormatter) Init(output_file string, columns_map map[string]FormatterColumn, indexes []FormatterIndex, group_analyzers []GroupAnalyzer) error {
 	if output_file == "-" {
 		f.OutputFile = os.Stdout
 	} else {
@@ -35,7 +36,12 @@ func (f *MySQLFormatter) Init(output_file string, columns []FormatterColumn, ind
 	}
 
 	f.Writer = bufio.NewWriter(f.OutputFile)
+	f.GroupAnalyzers = group_analyzers
 
+	columns := []FormatterColumn{}
+	for _, col := range columns_map {
+		columns = append(columns, col)
+	}
 	columns = append(columns, f.reverse_idx.Init(&indexes, f)...)
 
 	f.Columns = append([]FormatterColumn{{Name: "__internal_id", Type: FMT_TYPE_UINT32, Tags: []string{"nonnull"}}}, columns...)
@@ -228,11 +234,34 @@ func (f *MySQLFormatter) generate_column_comment(column *FormatterColumn) string
 }
 
 func (f *MySQLFormatter) generate_table_comment() string {
+	type AnalyzerManifest struct {
+		Analyzer GeneratorInfo `json:"analyzer"`
+		Data     any           `json:"data"`
+	}
+
 	var tmp struct {
-		Name        string            `json:"name"`
-		Description string            `json:"description"`
-		Version     uint32            `json:"version"`
-		Meta        map[string]string `json:"meta"`
+		Name          string              `json:"name"`
+		Description   string              `json:"description"`
+		Version       uint32              `json:"version"`
+		Meta          map[string]string   `json:"meta"`
+		GroupAnalyzer []AnalyzerManifest  `json:"group_analyzers"`
+		VirtColMap    map[string][]string `json:"virtcol_map"`
+	}
+
+	tmp.GroupAnalyzer = []AnalyzerManifest{}
+	tmp.VirtColMap = make(map[string][]string)
+
+	for _, a := range f.GroupAnalyzers {
+		tmp.GroupAnalyzer = append(tmp.GroupAnalyzer, AnalyzerManifest{
+			Analyzer: a.GetGeneratorInfo(),
+			Data:     a.GetAnalyzerData(),
+		})
+
+		m := a.GetVirtualColumnMap()
+
+		for v, c := range m {
+			tmp.VirtColMap[v] = c
+		}
 	}
 
 	if config.DatasetName != "" {

@@ -62,3 +62,7 @@ func (u *PhoneAnalyzer) GetGeneratorInfo() GeneratorInfo {
 func (u *PhoneAnalyzer) GetAnalyzerData() any {
 	return u.Data
 }
+
+func (u *PhoneAnalyzer) GetAnalyzerType() int {
+	return ANALYZER_PHONE
+}

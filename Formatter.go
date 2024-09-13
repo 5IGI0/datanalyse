@@ -1,7 +1,7 @@
 package main
 
 type Formatter interface {
-	Init(output_file string, columns []FormatterColumn, indexes []FormatterIndex) error
+	Init(output_file string, columns map[string]FormatterColumn, indexes []FormatterIndex, group_analyzers []GroupAnalyzer) error
 	GetFeatures() int
 	WriteRow(map[string]*string) error
 	Close()

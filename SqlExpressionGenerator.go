@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 type SqlExprGenerator struct {
 	CurrentVal string
@@ -14,6 +17,33 @@ func newSqlExpr(input_column string) SqlExprGenerator {
 
 func CheckNull(input_column string, expr SqlExprGenerator) SqlExprGenerator {
 	return newSqlExpr(input_column).IfNotNull(expr)
+}
+
+func EmptyIfNull(input_column string) SqlExprGenerator {
+	return newSqlExpr(input_column).IfNull(SqlExprGenerator{CurrentVal: "''"})
+}
+
+func SqlConcat(vals ...SqlExprGenerator) SqlExprGenerator {
+	var output bytes.Buffer
+
+	output.WriteString("CONCAT(")
+
+	for i, val := range vals {
+		if i != 0 {
+			output.WriteByte(',')
+		}
+
+		output.WriteString(val.String())
+	}
+
+	output.WriteByte(')')
+	return SqlExprGenerator{CurrentVal: output.String()}
+}
+
+func (e SqlExprGenerator) IfNull(in SqlExprGenerator) SqlExprGenerator {
+	return SqlExprGenerator{
+		CurrentVal: "IFNULL(" + e.CurrentVal + ", " + in.String() + ")",
+	}
 }
 
 func (e SqlExprGenerator) SplitBefore(text string) SqlExprGenerator {

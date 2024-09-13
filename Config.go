@@ -18,6 +18,11 @@ func (c *ColumnInfo) Init() {
 	c.MinLen = -1
 }
 
+type GroupInfo struct {
+	Kind   string
+	Fields []string
+}
+
 type Config struct {
 	// scanner config
 	Scanner   string
@@ -44,6 +49,7 @@ type Config struct {
 
 	// Analyzer config
 	ColumnInfos map[string]*ColumnInfo
+	GroupInfos  []GroupInfo
 }
 
 var config = Config{}
@@ -79,6 +85,7 @@ func ParseConfig() {
 	flag.Var(&ColumnTypeVar{&config.ColumnInfos}, "column-type", "Specify column's type, format: <column name>:<type>")
 	flag.Var(&ColumnLenVar{&config.ColumnInfos}, "column-len", "Specify column's len, format: <column name>:<max len>[:<min len>]")
 	flag.Var(&ColumnTagsVar{&config.ColumnInfos}, "column-tags", "Specify column's tags, format: <column name>:<tags>:...")
+	flag.Var(&GroupVar{&config.GroupInfos}, "group", "Specify group of column, format: <column name>:<tags>:...")
 
 	flag.Parse()
 

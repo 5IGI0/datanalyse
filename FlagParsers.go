@@ -130,3 +130,24 @@ func (v DatasetMetaVar) Set(s string) error {
 
 	return nil
 }
+
+type GroupVar struct {
+	groups *[]GroupInfo
+}
+
+func (v GroupVar) String() string {
+	return ""
+}
+
+func (v GroupVar) Set(s string) error {
+	tmp := strings.Split(s, ":")
+	if len(tmp) < 3 {
+		return errors.New("invalid")
+	}
+
+	*v.groups = append(*v.groups, GroupInfo{
+		Kind:   tmp[0],
+		Fields: tmp[1:]})
+
+	return nil
+}

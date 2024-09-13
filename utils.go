@@ -23,6 +23,12 @@ func reverse_str(s string) string {
 	return string(reversed)
 }
 
+func Assert(b bool) {
+	if !b {
+		panic("Assert failed")
+	}
+}
+
 func AssertError(err error) {
 	if err != nil {
 		panic(err)

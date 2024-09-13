@@ -54,7 +54,7 @@ func (u *UsernameAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterCo
 				Reversed:  true},
 			{ColumnName: u.Data.Bidirect,
 				IndexName: "__" + col.Name + "__username_bidirect",
-				Reversed:  true}},
+				Reversed:  false}},
 		nil
 }
 
@@ -80,4 +80,8 @@ func (u *UsernameAnalyzer) GetGeneratorInfo() GeneratorInfo {
 
 func (u *UsernameAnalyzer) GetAnalyzerData() any {
 	return u.Data
+}
+
+func (u *UsernameAnalyzer) GetAnalyzerType() int {
+	return ANALYZER_USERNAME
 }
