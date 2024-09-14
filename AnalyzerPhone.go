@@ -1,9 +1,8 @@
 package main
 
 type PhoneAnalyzer struct {
-	ColumnName     string
-	HasGeneratedAs bool
-	Data           struct {
+	ColumnName string
+	Data       struct {
 		Sanitized string `json:"sanitized"`
 	}
 }
@@ -15,16 +14,13 @@ type PhoneAnalyzerMetaColumn struct {
 
 func (u *PhoneAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	u.ColumnName = col.Name
-	u.HasGeneratedAs = (f.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
 
 	u.Data.Sanitized = "__" + col.Name + "__phone_sanitized"
 
 	return []FormatterColumn{
 			{Name: u.Data.Sanitized,
-				Type:              FMT_TYPE_STR,
+				ForceString:       true,
 				Tags:              []string{"nullable"},
-				MaxLen:            col.MaxLen,
-				MinLen:            0,
 				IsInvisible:       true,
 				AlwaysGeneratedAs: CheckNull(col.Name, newSqlExpr(col.Name).OnlyNum()).String(),
 				Generator:         u,
@@ -39,9 +35,6 @@ func (u *PhoneAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColum
 }
 
 func (u *PhoneAnalyzer) Analyze(row *map[string]*string) error {
-	if u.HasGeneratedAs {
-		return nil
-	}
 	if v, e := (*row)[u.ColumnName]; e && v != nil {
 		sanitized := OnlyNum(*v)
 

@@ -7,16 +7,10 @@ import (
 )
 
 type ColumnInfo struct {
-	Type   string
-	Tags   []string
-	MaxLen int
-	MinLen int
+	Tags []string
 }
 
-func (c *ColumnInfo) Init() {
-	c.MaxLen = -1
-	c.MinLen = -1
-}
+func (c *ColumnInfo) Init() {}
 
 type GroupInfo struct {
 	Kind   string
@@ -82,8 +76,6 @@ func ParseConfig() {
 	flag.Int64Var(&config.FmtSQLMaxQuerySize, "sql-max-query-size", 1048576, "Max SQL query size")
 
 	// Analyzer config
-	flag.Var(&ColumnTypeVar{&config.ColumnInfos}, "column-type", "Specify column's type, format: <column name>:<type>")
-	flag.Var(&ColumnLenVar{&config.ColumnInfos}, "column-len", "Specify column's len, format: <column name>:<max len>[:<min len>]")
 	flag.Var(&ColumnTagsVar{&config.ColumnInfos}, "column-tags", "Specify column's tags, format: <column name>:<tags>:...")
 	flag.Var(&GroupVar{&config.GroupInfos}, "group", "Specify group of column, format: <column name>:<tags>:...")
 
@@ -93,7 +85,7 @@ func ParseConfig() {
 		fmt.Println("Usage:", os.Args[0], "[FLAGS...] <subcommand>")
 		fmt.Println("subcommands:")
 		fmt.Println("  - hint:    analyze columns and try to guess columns' types (takes input file)")
-		fmt.Println("  - analyze: analyze columns and use `formater` to store it (takes input and output file)")
+		fmt.Println("  - analyze: analyze columns and use `formater` to store it (takes input and output folder)")
 		os.Exit(0)
 	}
 }

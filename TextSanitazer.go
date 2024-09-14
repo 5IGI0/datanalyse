@@ -77,5 +77,5 @@ func OnlyNum(text string) string {
 			ret.WriteRune(c)
 		}
 	}
-	return strings.ToLower(ret.String())
+	return ret.String()
 }

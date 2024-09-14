@@ -3,8 +3,7 @@ package main
 import "strings"
 
 type ReverseIndexEmulator struct {
-	Indexes        []FormatterIndex
-	HasGeneratedAs bool
+	Indexes []FormatterIndex
 }
 
 type ReverseIndexEmulatorIdxInfo struct {
@@ -14,13 +13,11 @@ type ReverseIndexEmulatorIdxInfo struct {
 func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex, f Formatter) []FormatterColumn {
 	var ret []FormatterColumn
 
-	e.HasGeneratedAs = (f.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
-
 	for i, index := range *indexes {
 		if index.Reversed {
 			ret = append(ret, FormatterColumn{
 				Name:              "__emidx_" + index.ColumnName,
-				Type:              FMT_TYPE_STR,
+				ForceString:       true,
 				Tags:              []string{"nullable"},
 				IsInvisible:       true,
 				AlwaysGeneratedAs: CheckNull(index.ColumnName, newSqlExpr(index.ColumnName).Reverse()).String(),
@@ -37,9 +34,6 @@ func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex, f Formatter) []Fo
 }
 
 func (e *ReverseIndexEmulator) Apply(rows *map[string]*string) {
-	if e.HasGeneratedAs {
-		return
-	}
 	for _, index := range e.Indexes {
 		if v, e := (*rows)[index.ColumnName]; e && v != nil {
 			tmp := reverse_str(*v)

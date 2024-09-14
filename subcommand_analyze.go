@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"slices"
 )
 
 func analyzer() {
@@ -63,36 +62,12 @@ func analyzer_setup_analyzers(scanner InputScanner, formatter Formatter) (map[st
 		colinf, e := config.ColumnInfos[f]
 
 		if !e {
+			colinf = new(ColumnInfo)
 			colinf.Init()
 		}
 
 		column := FormatterColumn{
-			Name: f, Tags: colinf.Tags,
-			MaxLen: colinf.MaxLen, MinLen: colinf.MinLen,
-			IsLenFixed: colinf.MaxLen == colinf.MinLen}
-
-		if len(colinf.Type) == 0 {
-			colinf.Type = "str"
-			Warn(fmt.Sprintf("no type was specified for `%s`, interpreted as string.", f))
-		}
-
-		column.Type = StrType2FmtType(colinf.Type)
-		if column.Type == FMT_TYPE_UNKNOWN {
-			column.Type = FMT_TYPE_STR
-			Warn(fmt.Sprintf("invalid type `%s`, `%s` interpreted as string.", colinf.Type, f))
-		}
-
-		if column.Tags == nil ||
-			(!slices.Contains(column.Tags, "nonnull") && !slices.Contains(column.Tags, "nullable")) {
-			Warn(fmt.Sprintf("`%s` has not been marked as nonnull or nullable, defaulting to nullable.", colinf.Type))
-			column.Tags = append(column.Tags, "nullable")
-		}
-
-		if slices.Contains(column.Tags, "nonnull") && slices.Contains(column.Tags, "nullable") {
-			Warn(fmt.Sprintf("`%s` has been marked as nonnull _AND_ nullable, defaulting to nullable.", colinf.Type))
-			i := slices.Index(column.Tags, "nonnull")
-			column.Tags = slices.Delete(column.Tags, i, i+1)
-		}
+			Name: f, Tags: colinf.Tags}
 
 		for _, tag := range colinf.Tags {
 			if analyzer := GetAnalyzer(tag); analyzer != nil {

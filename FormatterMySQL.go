@@ -2,17 +2,19 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 )
 
 type MySQLFormatter struct {
 	OutputFile     *os.File
+	OutputDir      string
 	Writer         *bufio.Writer
 	Columns        []FormatterColumn
+	TypeDetectors  map[string]*TypeDetector
 	Indexes        []FormatterIndex
 	GroupAnalyzers []GroupAnalyzer
 	reverse_idx    ReverseIndexEmulator
@@ -24,19 +26,24 @@ func (f *MySQLFormatter) GetFeatures() int {
 	return FMT_FEATURE_GENERATED_AS
 }
 
-func (f *MySQLFormatter) Init(output_file string, columns_map map[string]FormatterColumn, indexes []FormatterIndex, group_analyzers []GroupAnalyzer) error {
-	if output_file == "-" {
-		f.OutputFile = os.Stdout
-	} else {
-		var err error
-		f.OutputFile, err = os.OpenFile(output_file, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
-		if err != nil {
-			panic(err)
-		}
+func (f *MySQLFormatter) Init(output_dir string, columns_map map[string]FormatterColumn, indexes []FormatterIndex, group_analyzers []GroupAnalyzer) error {
+	if output_dir == "" {
+		output_dir = "."
+	}
+
+	f.OutputDir = output_dir + "/"
+
+	AssertError(os.MkdirAll(f.OutputDir, 0777))
+
+	var err error
+	f.OutputFile, err = os.OpenFile(f.OutputDir+"/001-body.sql", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+	if err != nil {
+		panic(err)
 	}
 
 	f.Writer = bufio.NewWriter(f.OutputFile)
 	f.GroupAnalyzers = group_analyzers
+	f.TypeDetectors = map[string]*TypeDetector{}
 
 	columns := []FormatterColumn{}
 	for _, col := range columns_map {
@@ -44,10 +51,22 @@ func (f *MySQLFormatter) Init(output_file string, columns_map map[string]Formatt
 	}
 	columns = append(columns, f.reverse_idx.Init(&indexes, f)...)
 
-	f.Columns = append([]FormatterColumn{{Name: "__internal_id", Type: FMT_TYPE_UINT32, Tags: []string{"nonnull"}}}, columns...)
+	for _, col := range columns {
+		td := new(TypeDetector)
+		td.Init()
+		f.TypeDetectors[col.Name] = td
+	}
+
+	f.Columns = append([]FormatterColumn{{Name: "__internal_id"}}, columns...)
 	f.Indexes = indexes
 
-	f.Writer.WriteString("SET SESSION sql_mode='';\nDROP TABLE IF EXISTS `")
+	f.Writer.WriteString("SET SESSION sql_mode='';\n")
+
+	return nil
+}
+
+func (f *MySQLFormatter) write_table() {
+	f.Writer.WriteString("DROP TABLE IF EXISTS `")
 	f.Writer.WriteString(config.FmtSQLTable)
 	f.Writer.WriteString("`;\nCREATE TABLE `")
 	f.Writer.WriteString(config.FmtSQLTable)
@@ -57,38 +76,54 @@ func (f *MySQLFormatter) Init(output_file string, columns_map map[string]Formatt
 		if i != 0 {
 			f.Writer.WriteString(",\n")
 		}
+
+		if col.Name == "__internal_id" {
+			f.Writer.WriteString("\t`__internal_id` BIGINT UNSIGNED NOT NULL PRIMARY KEY")
+			continue
+		}
+
+		dt := f.TypeDetectors[col.Name]
+		Assert(dt != nil)
+
 		f.Writer.WriteString("\t`")
 		f.Writer.WriteString(col.Name)
 		f.Writer.WriteString("` ")
-		f.Writer.WriteString(map[int8]string{
-			FMT_TYPE_STR:    f.get_string_type(col),
-			FMT_TYPE_INT8:   "TINYINT",
-			FMT_TYPE_UINT8:  "TINYINT UNSIGNED",
-			FMT_TYPE_INT16:  "SMALLINT",
-			FMT_TYPE_UINT16: "SMALLINT UNSIGNED",
-			FMT_TYPE_INT32:  "INT",
-			FMT_TYPE_UINT32: "INT UNSIGNED",
-			FMT_TYPE_INT64:  "BIG",
-			FMT_TYPE_UINT64: "BIG UNSIGNED",
-		}[col.Type])
-		f.Writer.WriteString(" ")
+		f.Writer.WriteString(f.DetectedTypeToSQL(dt, col))
+		f.Writer.WriteByte(' ')
 
 		/* always generated as */
 
-		if col.AlwaysGeneratedAs == "" {
+		if col.AlwaysGeneratedAs == "" && !dt.IsConstant() {
 			/* cannot use NOT NULL on generated values (mariadb) */
-			if slices.Index(col.Tags, "nonnull") != -1 {
+			if !dt.IsNullable() {
 				f.Writer.WriteString(" NOT NULL")
+				if col.IsInvisible {
+					/* invisible columns need default value for unknown reason */
+					f.Writer.WriteString(" DEFAULT ''") // TODO: manage non-string values
+				}
 			}
 		} else {
 			f.Writer.WriteString(" GENERATED ALWAYS AS (")
-			f.Writer.WriteString(col.AlwaysGeneratedAs)
 
-			/* if it is invisible, then we don't store it */
-			if col.IsInvisible {
-				f.Writer.WriteString(") VIRTUAL")
+			if dt.IsConstant() {
+				/* we don't care how to generate it if it is constant */
+				cst := dt.GetConstVal()
+
+				if cst == nil {
+					f.Writer.WriteString("NULL) VIRTUAL")
+				} else {
+					f.Writer.WriteString(EscapeString(*cst))
+					f.Writer.WriteString(") VIRTUAL")
+				}
 			} else {
-				f.Writer.WriteString(") STORED")
+				f.Writer.WriteString(col.AlwaysGeneratedAs)
+
+				/* if it is invisible, then we don't store it */
+				if col.IsInvisible {
+					f.Writer.WriteString(") VIRTUAL")
+				} else {
+					f.Writer.WriteString(") STORED")
+				}
 			}
 		}
 
@@ -99,18 +134,52 @@ func (f *MySQLFormatter) Init(output_file string, columns_map map[string]Formatt
 		f.Writer.WriteString(" COMMENT ")
 		f.Writer.WriteString(EscapeString(f.generate_column_comment(&col)))
 	}
-	f.Writer.WriteString(",\n\tPRIMARY KEY(`__internal_id`)) COMMENT ")
+
+	f.Writer.WriteString("\n) COMMENT ")
 	f.Writer.WriteString(EscapeString(f.generate_table_comment()) + ";\n")
-	return nil
 }
 
-func (f *MySQLFormatter) get_string_type(column FormatterColumn) string {
-	if column.IsLenFixed {
-		return fmt.Sprint("CHAR(", column.MaxLen, ")")
-	} else if column.MaxLen != 0 && column.MaxLen < 1024 {
-		return fmt.Sprint("VARCHAR(", column.MaxLen, ")")
+func (f *MySQLFormatter) DetectedTypeToSQL(td *TypeDetector, col FormatterColumn) string {
+	t := td.GetType()
+
+	/* strings */
+	if t == FMT_TYPE_STR || col.ForceString {
+		charset := "ASCII"
+		if !td.IsASCII() {
+			charset = "utf8mb4"
+		}
+		if td.MaxLen == td.MinLen {
+			return fmt.Sprint("CHAR(", td.MaxLen, ") CHARSET ", charset)
+		} else if td.MaxLen >= 0 && td.MaxLen < 1024 {
+			return fmt.Sprint("VARCHAR(", td.MaxLen, ") CHARSET ", charset)
+		}
+		return "TEXT CHARSET " + charset
 	}
-	return "TEXT"
+
+	/* enums */
+	if t == FMT_TYPE_ENUM {
+		var buff bytes.Buffer
+		buff.WriteString("ENUM(")
+		for i, val := range td.GetEnumVals() {
+			if i != 0 {
+				buff.WriteByte(',')
+			}
+			buff.WriteString(EscapeString(val))
+		}
+		return buff.String() + ")"
+	}
+
+	/* numbers */
+	return map[int]string{
+		FMT_TYPE_INT8:   "TINYINT",
+		FMT_TYPE_UINT8:  "TINYINT UNSIGNED",
+		FMT_TYPE_INT16:  "SMALLINT",
+		FMT_TYPE_UINT16: "SMALLINT UNSIGNED",
+		FMT_TYPE_INT32:  "INT",
+		FMT_TYPE_UINT32: "INT UNSIGNED",
+		FMT_TYPE_INT64:  "BIG",
+		FMT_TYPE_UINT64: "BIG UNSIGNED",
+	}[t]
 }
 
 func (f *MySQLFormatter) _startInsertQuery() {
@@ -174,6 +243,13 @@ func (f *MySQLFormatter) WriteRow(row map[string]*string) error {
 		return nil
 	}
 
+	for _, col := range f.Columns {
+		td := f.TypeDetectors[col.Name]
+		if td != nil {
+			td.Analyze(row[col.Name])
+		}
+	}
+
 	encoded := f._encodeRow(row)
 
 	if len(encoded)+f.CachedQuery.Len() > int(config.FmtSQLMaxQuerySize)-3 {
@@ -197,8 +273,20 @@ func (f *MySQLFormatter) Close() {
 	for _, index := range f.Indexes {
 		fmt.Fprint(f.Writer, "CREATE INDEX `", index.IndexName, "` ON `", config.FmtSQLTable, "`(`", index.ColumnName, "`);\n")
 	}
+
 	f.Writer.Flush()
 	f.OutputFile.Close()
+
+	var err error
+	f.OutputFile, err = os.OpenFile(f.OutputDir+"/000-table.sql", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0777)
+	AssertError(err)
+	f.Writer = bufio.NewWriter(f.OutputFile)
+	f.write_table()
+	AssertError(f.Writer.Flush())
+	AssertError(f.OutputFile.Close())
+	// for colname, td := range f.TypeDetectors {
+	// 	fmt.Fprintf(f.Writer, "%s:%#v\n", colname, td)
+	// }
 }
 
 func (f *MySQLFormatter) generate_column_comment(column *FormatterColumn) string {

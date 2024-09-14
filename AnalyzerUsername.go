@@ -1,9 +1,8 @@
 package main
 
 type UsernameAnalyzer struct {
-	ColumnName     string
-	HasGeneratedAs bool
-	Data           struct {
+	ColumnName string
+	Data       struct {
 		Sanitized string `json:"sanitized"`
 		Bidirect  string `json:"bidirect"`
 	}
@@ -17,17 +16,14 @@ type UsernameAnalyzerMetaColumnInfo struct {
 
 func (u *UsernameAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	u.ColumnName = col.Name
-	u.HasGeneratedAs = (f.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
 
 	u.Data.Sanitized = "__" + col.Name + "__username_sanitized"
 	u.Data.Bidirect = "__" + col.Name + "__username_bidirect"
 
 	return []FormatterColumn{
 			{Name: u.Data.Sanitized,
-				Type:        FMT_TYPE_STR,
+				ForceString: true,
 				Tags:        []string{"nullable"},
-				MaxLen:      col.MaxLen,
-				MinLen:      0,
 				IsInvisible: true,
 				Generator:   u,
 				GeneratorData: UsernameAnalyzerMetaColumnInfo{
@@ -35,10 +31,8 @@ func (u *UsernameAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterCo
 					ColumnType:   "sanitized",
 					Version:      1}},
 			{Name: u.Data.Bidirect,
-				Type:        FMT_TYPE_STR,
+				ForceString: true,
 				Tags:        []string{"nullable"},
-				MaxLen:      col.MaxLen * 2,
-				MinLen:      0,
 				IsInvisible: true,
 				Generator:   u,
 				GeneratorData: UsernameAnalyzerMetaColumnInfo{

@@ -7,9 +7,8 @@ import (
 )
 
 type EmailAnalyzer struct {
-	ColumnName     string
-	HasGeneratedAs bool
-	Data           struct {
+	ColumnName string
+	Data       struct {
 		ReverseLogin  string `json:"reverse_login"`
 		BidirectLogin string `json:"bidirect_login"`
 		ReverseDomain string `json:"ReverseDomain"`
@@ -24,7 +23,6 @@ type EmailAnalyzerMetaColumnInfo struct {
 
 func (a *EmailAnalyzer) Init(Column FormatterColumn, formatter Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	a.ColumnName = Column.Name
-	a.HasGeneratedAs = (formatter.GetFeatures() & FMT_FEATURE_GENERATED_AS) != 0
 
 	a.Data.ReverseLogin = "__" + Column.Name + "__email_reverse_login"
 	a.Data.BidirectLogin = "__" + Column.Name + "__email_bidirect_login"
@@ -33,9 +31,8 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn, formatter Formatter) ([]For
 	return []FormatterColumn{
 			{
 				Name:        a.Data.ReverseDomain,
-				Type:        FMT_TYPE_STR,
+				ForceString: true,
 				Tags:        []string{"nullable"},
-				MaxLen:      Column.MaxLen,
 				IsInvisible: true,
 				Generator:   a,
 				GeneratorData: EmailAnalyzerMetaColumnInfo{
@@ -45,9 +42,8 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn, formatter Formatter) ([]For
 				}},
 			{
 				Name:        a.Data.ReverseLogin,
-				Type:        FMT_TYPE_STR,
+				ForceString: true,
 				Tags:        []string{"nullable"},
-				MaxLen:      Column.MaxLen,
 				IsInvisible: true,
 				AlwaysGeneratedAs: CheckNull(a.ColumnName, newSqlExpr(a.ColumnName).
 					SplitBefore("@").
@@ -64,9 +60,8 @@ func (a *EmailAnalyzer) Init(Column FormatterColumn, formatter Formatter) ([]For
 				}},
 			{
 				Name:        a.Data.BidirectLogin,
-				Type:        FMT_TYPE_STR,
+				ForceString: true,
 				Tags:        []string{"nullable"},
-				MaxLen:      Column.MaxLen * 2,
 				IsInvisible: true,
 				Generator:   a,
 				GeneratorData: EmailAnalyzerMetaColumnInfo{
@@ -114,10 +109,8 @@ func (a *EmailAnalyzer) Analyze(row *map[string]*string) error {
 		(*row)[a.Data.ReverseDomain] = &tmp
 	}
 
-	if !a.HasGeneratedAs {
-		tmp := reverse_str(login)
-		(*row)[a.Data.ReverseLogin] = &tmp
-	}
+	tmp := reverse_str(login)
+	(*row)[a.Data.ReverseLogin] = &tmp
 
 	{
 		tmp := BidirectionalizeTextA(login)

@@ -13,11 +13,8 @@ const (
 
 type FormatterColumn struct {
 	Name        string
-	Type        int8
+	ForceString bool
 	Tags        []string
-	MaxLen      int
-	MinLen      int
-	IsLenFixed  bool
 	IsInvisible bool
 	// expression used to generate the targeted value
 	AlwaysGeneratedAs string
@@ -41,6 +38,7 @@ const (
 	FMT_TYPE_UINT32  = 6
 	FMT_TYPE_INT64   = 7
 	FMT_TYPE_UINT64  = 8
+	FMT_TYPE_ENUM    = 9
 )
 
 type FormatterIndex struct {

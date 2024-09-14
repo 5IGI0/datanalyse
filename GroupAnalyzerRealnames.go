@@ -17,27 +17,10 @@ type RealnamesGroupAnalyzer struct {
 func (ga *RealnamesGroupAnalyzer) Init(cols []FormatterColumn, f Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 
 	/* generate column info */
-	max_len := 0
-	min_len := 0
 	column_slug := "realnames"
 	for _, column := range cols {
 		ga.Data.Columns = append(ga.Data.Columns, column.Name)
 		column_slug += ":" + column.Name
-
-		if max_len >= 0 {
-			max_len += column.MaxLen
-			if column.MaxLen == -1 {
-				max_len = -1
-			}
-		}
-
-		if min_len >= 0 {
-			min_len += column.MinLen
-			if column.MinLen == -1 {
-				max_len = -1
-			}
-		}
-
 	}
 
 	sum := md5.Sum([]byte(column_slug))
@@ -45,11 +28,8 @@ func (ga *RealnamesGroupAnalyzer) Init(cols []FormatterColumn, f Formatter) ([]F
 
 	VirtCol := FormatterColumn{
 		Name:          ga.Data.VirtualColName,
-		Type:          FMT_TYPE_STR,
+		ForceString:   true,
 		Tags:          []string{"nullable"},
-		MaxLen:        max_len,
-		MinLen:        min_len,
-		IsLenFixed:    max_len == min_len,
 		IsInvisible:   true,
 		Generator:     ga,
 		GeneratorData: ga.Data}
