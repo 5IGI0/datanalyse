@@ -18,21 +18,31 @@ func (ga *RealnamesGroupAnalyzer) Init(cols []FormatterColumn, f Formatter) ([]F
 
 	/* generate column info */
 	column_slug := "realnames"
-	for _, column := range cols {
+	linked_column := ""
+	for i, column := range cols {
 		ga.Data.Columns = append(ga.Data.Columns, column.Name)
 		column_slug += ":" + column.Name
+		if i != 0 {
+			linked_column += ":" + column.Name
+		} else {
+			linked_column += column.Name
+		}
 	}
 
 	sum := md5.Sum([]byte(column_slug))
 	ga.Data.VirtualColName = "__virtcol_" + hex.EncodeToString(sum[:5])
 
 	VirtCol := FormatterColumn{
-		Name:          ga.Data.VirtualColName,
-		ForceString:   true,
-		Tags:          []string{"nullable"},
-		IsInvisible:   true,
-		Generator:     ga,
-		GeneratorData: ga.Data}
+		Name:        ga.Data.VirtualColName,
+		ForceString: true,
+		Tags:        []string{"nullable"},
+		IsInvisible: true,
+		Generator:   ga,
+		GeneratorData: &GeneratorData{
+			Format:       "merged_column",
+			PrimaryType:  "merged_column",
+			Version:      1,
+			LinkedColumn: linked_column}}
 
 	/* pass it to the realnames analyzer */
 	ga.SubAnalyzer = GetAnalyzer("realnames")

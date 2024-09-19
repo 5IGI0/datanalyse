@@ -15,6 +15,11 @@ func analyzer() {
 	}
 	defer scanner.Close()
 
+	if config.FmtSQLTable == "" {
+		Warn("--sql-table is missing.")
+		os.Exit(1)
+	}
+
 	formatter := MySQLFormatter{}
 	c, i, analyzers, group_analyzers := analyzer_setup_analyzers(scanner, &formatter)
 	output := flag.Arg(2)
@@ -24,6 +29,7 @@ func analyzer() {
 	formatter.Init(flag.Arg(2), c, i, group_analyzers)
 	defer formatter.Close()
 
+	var count int
 	for {
 		data, err := scanner.ReadRow()
 		if err != nil {
@@ -31,6 +37,11 @@ func analyzer() {
 		}
 		if data == nil {
 			break
+		}
+
+		count++
+		if count%50_000 == 0 {
+			fmt.Println(count, "rows processed")
 		}
 
 		for _, analyzer := range analyzers {

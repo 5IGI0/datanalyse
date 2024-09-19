@@ -1,17 +1,12 @@
 package main
 
 type UsernameAnalyzer struct {
-	ColumnName string
-	Data       struct {
+	ColumnName  string
+	PrimaryType string
+	Data        struct {
 		Sanitized string `json:"sanitized"`
 		Bidirect  string `json:"bidirect"`
 	}
-}
-
-type UsernameAnalyzerMetaColumnInfo struct {
-	LinkedColumn string `json:"linked_col"`
-	ColumnType   string `json:"coltyp"`
-	Version      uint32 `json:"ver"`
 }
 
 func (u *UsernameAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColumn, []FormatterIndex, error) {
@@ -20,24 +15,30 @@ func (u *UsernameAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterCo
 	u.Data.Sanitized = "__" + col.Name + "__username_sanitized"
 	u.Data.Bidirect = "__" + col.Name + "__username_bidirect"
 
+	if u.PrimaryType == "" {
+		u.PrimaryType = "username"
+	}
+
 	return []FormatterColumn{
 			{Name: u.Data.Sanitized,
 				ForceString: true,
 				Tags:        []string{"nullable"},
 				IsInvisible: true,
 				Generator:   u,
-				GeneratorData: UsernameAnalyzerMetaColumnInfo{
+				GeneratorData: &GeneratorData{
 					LinkedColumn: col.Name,
-					ColumnType:   "sanitized",
+					Format:       "sanitized",
+					PrimaryType:  u.PrimaryType,
 					Version:      1}},
 			{Name: u.Data.Bidirect,
 				ForceString: true,
 				Tags:        []string{"nullable"},
 				IsInvisible: true,
 				Generator:   u,
-				GeneratorData: UsernameAnalyzerMetaColumnInfo{
+				GeneratorData: &GeneratorData{
 					LinkedColumn: col.Name,
-					ColumnType:   "bidirect",
+					Format:       "bidirect_sanitized",
+					PrimaryType:  u.PrimaryType,
 					Version:      1}}},
 		[]FormatterIndex{
 			{ColumnName: u.Data.Sanitized,

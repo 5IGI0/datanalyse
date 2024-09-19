@@ -28,7 +28,7 @@ func GetAnalyzer(tag string) Analyzer {
 	case "username":
 		return &UsernameAnalyzer{}
 	case "realnames":
-		return &UsernameAnalyzer{}
+		return &UsernameAnalyzer{PrimaryType: "realnames"}
 	case "phone":
 		return &PhoneAnalyzer{}
 	case "facebook_id":

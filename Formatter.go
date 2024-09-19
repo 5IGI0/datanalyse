@@ -11,6 +11,15 @@ const (
 	FMT_FEATURE_GENERATED_AS = 1
 )
 
+type GeneratorData struct {
+	Format       string   `json:"format"`
+	PrimaryType  string   `json:"primary_type"`
+	Tags         []string `json:"tags"`
+	Version      int      `json:"ver"`
+	LinkedColumn string   `json:"linked_col"`
+	CustomData   any      `json:"custom_data"`
+}
+
 type FormatterColumn struct {
 	Name        string
 	ForceString bool
@@ -22,7 +31,7 @@ type FormatterColumn struct {
 		GetGeneratorInfo() GeneratorInfo
 	}
 	// data of the analyzer that generated this column
-	GeneratorData any
+	GeneratorData *GeneratorData
 	// analyzers that will pass on it to generate new columns
 	Analyzers []Analyzer
 }

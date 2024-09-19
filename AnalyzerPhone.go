@@ -7,11 +7,6 @@ type PhoneAnalyzer struct {
 	}
 }
 
-type PhoneAnalyzerMetaColumn struct {
-	LinkedColumn string `json:"linked_col"`
-	Version      uint32 `json:"ver"`
-}
-
 func (u *PhoneAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColumn, []FormatterIndex, error) {
 	u.ColumnName = col.Name
 
@@ -24,8 +19,10 @@ func (u *PhoneAnalyzer) Init(col FormatterColumn, f Formatter) ([]FormatterColum
 				IsInvisible:       true,
 				AlwaysGeneratedAs: CheckNull(col.Name, newSqlExpr(col.Name).OnlyNum()).String(),
 				Generator:         u,
-				GeneratorData: PhoneAnalyzerMetaColumn{
+				GeneratorData: &GeneratorData{
 					LinkedColumn: col.Name,
+					Format:       "numeric",
+					PrimaryType:  "phone_number",
 					Version:      1}}},
 		[]FormatterIndex{
 			{ColumnName: u.Data.Sanitized,

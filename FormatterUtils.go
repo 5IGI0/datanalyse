@@ -22,8 +22,10 @@ func (e *ReverseIndexEmulator) Init(indexes *[]FormatterIndex, f Formatter) []Fo
 				IsInvisible:       true,
 				AlwaysGeneratedAs: CheckNull(index.ColumnName, newSqlExpr(index.ColumnName).Reverse()).String(),
 				Generator:         e,
-				GeneratorData: ReverseIndexEmulatorIdxInfo{
-					LinkedColumn: index.ColumnName}})
+				GeneratorData: &GeneratorData{
+					LinkedColumn: index.ColumnName,
+					Format:       "reverse_text",
+					PrimaryType:  "reverse_index_emulated"}})
 			e.Indexes = append(e.Indexes, index)
 			(*indexes)[i].ColumnName = "__emidx_" + index.ColumnName
 			(*indexes)[i].Reversed = false
